@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "name": "",
+    "email": "",
+    "department": "",
+    "college": "",
+    "notifications": {
+      "examStart": true,
+      "examEnd": true,
+      "suspicious": true,
+      "submission": false
+    },
+    "examDefaults": {
+      "timezone": "Asia/Kolkata",
+      "autoPublish": false,
+      "resultVisibility": "after_exam"
+    }
+  },
+  "security": {
+    "forceFullscreen": true,
+    "cancelOnTabSwitch": true,
+    "disableCopyPaste": true,
+    "disableRightClick": true,
+    "disableDevTools": true,
+    "enableScreenRecording": false,
+    "enableWebcamMonitoring": false,
+    "randomizeQuestions": true,
+    "randomizeTestCases": false,
+    "maxTabSwitches": 3,
+    "warningMessage": "Warning: Suspicious activity detected. Further violations will terminate your exam."
+  },
+  "examMetadata": {}
+}

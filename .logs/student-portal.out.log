@@ -1,0 +1,50 @@
+
+> my-project@0.1.0 dev
+> next dev --port 3001
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://172.24.96.1:3001
+- Environments: .env.local
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\dell\\Downloads\\b_1PfGq013l5V-1773757198734\\student_portal',
+  testMode: true
+}
+✓ Ready in 5.3s
+○ Compiling / ...
+ GET / 200 in 6.6s (compile: 4.3s, proxy.ts: 1623ms, render: 687ms)
+ GET / 200 in 220ms (compile: 20ms, proxy.ts: 21ms, render: 179ms)
+ POST /api/auth/login 200 in 5.2s (compile: 3.7s, render: 1513ms)
+ GET / 200 in 153ms (compile: 17ms, proxy.ts: 22ms, render: 114ms)
+ GET / 200 in 231ms (compile: 20ms, proxy.ts: 37ms, render: 174ms)
+ POST /api/auth/login 200 in 793ms (compile: 12ms, render: 782ms)
+ GET / 200 in 89ms (compile: 13ms, proxy.ts: 16ms, render: 61ms)
+ GET / 200 in 108ms (compile: 14ms, proxy.ts: 18ms, render: 76ms)
+ POST /api/auth/login 200 in 387ms (compile: 14ms, render: 373ms)
+ GET / 200 in 77ms (compile: 14ms, proxy.ts: 17ms, render: 46ms)
+ GET / 200 in 80ms (compile: 12ms, proxy.ts: 15ms, render: 53ms)
+ POST /api/auth/login 200 in 363ms (compile: 9ms, render: 354ms)
+ GET / 200 in 228ms (compile: 11ms, proxy.ts: 14ms, render: 203ms)
+ GET / 200 in 90ms (compile: 11ms, proxy.ts: 18ms, render: 62ms)
+ POST /api/auth/login 200 in 349ms (compile: 23ms, render: 326ms)
+ GET / 200 in 76ms (compile: 13ms, proxy.ts: 13ms, render: 49ms)
+ GET / 200 in 133ms (compile: 9ms, proxy.ts: 25ms, render: 99ms)
+ POST /api/auth/login 200 in 370ms (compile: 11ms, render: 359ms)
+ GET / 200 in 137ms (compile: 11ms, proxy.ts: 15ms, render: 111ms)
+ GET / 200 in 93ms (compile: 9ms, proxy.ts: 21ms, render: 63ms)
+ POST /api/auth/login 200 in 512ms (compile: 10ms, render: 501ms)
+ GET / 200 in 84ms (compile: 12ms, proxy.ts: 16ms, render: 56ms)
+ GET / 200 in 112ms (compile: 26ms, proxy.ts: 21ms, render: 65ms)
+ GET / 200 in 300ms (compile: 12ms, proxy.ts: 17ms, render: 271ms)
+ POST /api/auth/login 200 in 538ms (compile: 13ms, render: 526ms)
+ GET / 200 in 102ms (compile: 11ms, proxy.ts: 25ms, render: 66ms)
+ GET / 200 in 93ms (compile: 12ms, proxy.ts: 20ms, render: 62ms)
+ POST /api/auth/login 200 in 493ms (compile: 9ms, render: 485ms)
+ GET / 200 in 86ms (compile: 13ms, proxy.ts: 16ms, render: 57ms)
+ GET / 200 in 113ms (compile: 9ms, proxy.ts: 16ms, render: 89ms)
+ POST /api/auth/login 200 in 358ms (compile: 9ms, render: 348ms)
+ GET / 200 in 169ms (compile: 12ms, proxy.ts: 15ms, render: 143ms)
+ GET / 200 in 90ms (compile: 10ms, proxy.ts: 15ms, render: 65ms)
+[?25h
