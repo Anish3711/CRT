@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { executeCodeLocally } from '@/lib/local-code-execution'
+import { normalizeStdin } from '@/lib/code-input-normalizer'
 
 // Piston API uses specific language versions and names
 const LANGUAGE_MAP: Record<string, { language: string, version: string }> = {
@@ -26,34 +28,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Unsupported language: ${language}` }, { status: 400 })
     }
 
-    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        language: pistonLang.language,
-        version: pistonLang.version,
-        files: [
-          {
-            content: code,
-          },
-        ],
-        stdin: input,
-      }),
-    })
+    const normalizedInput = normalizeStdin(code, language, input)
 
-    const data = await response.json()
+    try {
+      const localResult = await executeCodeLocally({ code, language, stdin: normalizedInput })
+      return NextResponse.json({
+        output: localResult.stdout,
+        error: localResult.stderr,
+        exitCode: localResult.exitCode,
+      })
+    } catch (localError) {
+      const localMessage = localError instanceof Error ? localError.message : String(localError)
+      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          language: pistonLang.language,
+          version: pistonLang.version,
+          files: [
+            {
+              content: code,
+            },
+          ],
+          stdin: normalizedInput,
+        }),
+      })
 
-    if (data.message) {
-      return NextResponse.json({ error: data.message }, { status: 500 })
+      const data = await response.json()
+
+      if (data.message) {
+        return NextResponse.json({ error: `${data.message} Local fallback also failed: ${localMessage}` }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        output: data.run.stdout,
+        error: data.run.stderr,
+        exitCode: data.run.code,
+      })
     }
-
-    return NextResponse.json({
-      output: data.run.stdout,
-      error: data.run.stderr,
-      exitCode: data.run.code,
-    })
   } catch (error) {
     console.error('Compilation error:', error)
     return NextResponse.json({ error: 'Failed to compile code' }, { status: 500 })

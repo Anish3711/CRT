@@ -37,6 +37,17 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+function isMissingColumnMessage(message: string, columnName: string) {
+  const normalized = message.toLowerCase()
+  const needle = columnName.toLowerCase()
+
+  return (
+    normalized.includes(`could not find the '${needle}' column`) ||
+    normalized.includes(`column test_cases.${needle} does not exist`) ||
+    normalized.includes(`column ${needle} does not exist`)
+  )
+}
+
 export async function GET(req: NextRequest) {
   try {
     const examId = req.nextUrl.searchParams.get('examId')
@@ -134,25 +145,56 @@ export async function GET(req: NextRequest) {
           }
 
           // Fetch test cases for this coding question
-          const { data: tcs, error: tcError } = await supabase
-            .from('test_cases')
-            .select('id, input_data, input, expected_output, is_hidden, is_visible, created_at')
-            .eq('coding_question_id', cq.id)
-            .order('created_at', { ascending: true })
+          const selectVariants = [
+            'id, input_data, expected_output, is_hidden, created_at',
+            'id, input_data, expected_output, is_visible, created_at',
+            'id, input, expected_output, is_hidden, created_at',
+            'id, input, expected_output, is_visible, created_at',
+          ]
 
-          if (!tcError) {
-            testCases[cq.question_id] = (tcs || [])
-              .filter(tc => tc.is_hidden !== true && tc.is_visible !== false)
-              .map(tc => ({
-                id: tc.id,
-                input_data: tc.input_data || tc.input || '',
-                expected_output: tc.expected_output || '',
-                is_visible: true,
-                created_at: tc.created_at,
-              }))
-          } else {
+          let normalizedCases: SafeTestCaseRow[] = []
+          let tcError: { message?: string } | null = null
+
+          for (const selectClause of selectVariants) {
+            const result = await supabase
+              .from('test_cases')
+              .select(selectClause)
+              .eq('coding_question_id', cq.id)
+              .order('created_at', { ascending: true })
+
+            if (!result.error) {
+              normalizedCases = ((result.data || []) as unknown as Array<Record<string, unknown>>)
+                .filter((tc) => tc.is_hidden !== true && tc.is_visible !== false)
+                .map((tc) => ({
+                  id: String(tc.id ?? ''),
+                  input_data: String(tc.input_data ?? tc.input ?? ''),
+                  expected_output: String(tc.expected_output ?? ''),
+                  is_visible: true,
+                  created_at: String(tc.created_at ?? ''),
+                }))
+              tcError = null
+              break
+            }
+
+            const isSchemaMismatch =
+              isMissingColumnMessage(result.error.message, 'input_data') ||
+              isMissingColumnMessage(result.error.message, 'input') ||
+              isMissingColumnMessage(result.error.message, 'is_hidden') ||
+              isMissingColumnMessage(result.error.message, 'is_visible')
+
+            if (!isSchemaMismatch) {
+              tcError = result.error
+              break
+            }
+
+            tcError = result.error
+          }
+
+          if (tcError) {
             console.error('Error fetching test cases:', tcError)
             testCases[cq.question_id] = []
+          } else {
+            testCases[cq.question_id] = normalizedCases
           }
         }
       } else if (cqError) {

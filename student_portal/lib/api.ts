@@ -199,6 +199,21 @@ function normalizeAllowedLanguages(allowedLanguages?: string[] | null, fallback 
   return normalized.length > 0 ? Array.from(new Set(normalized)) : [fallback]
 }
 
+function isMissingColumnError(error: unknown, columnName: string) {
+  const message = error && typeof error === 'object' && 'message' in error
+    ? String(error.message)
+    : ''
+  const normalized = message.toLowerCase()
+  const needle = columnName.toLowerCase()
+
+  return (
+    normalized.includes(`could not find the '${needle}' column`) ||
+    normalized.includes(`column test_cases.${needle} does not exist`) ||
+    normalized.includes(`column coding_questions.${needle} does not exist`) ||
+    normalized.includes(`column ${needle} does not exist`)
+  )
+}
+
 function buildExtendedCodingPayload(
   questionId: string,
   data: Pick<CodingProblem, 'sampleInput' | 'sampleOutput' | 'title' | 'description' | 'inputFormat' | 'outputFormat' | 'constraints' | 'timeLimit' | 'memoryLimit'>,
@@ -304,25 +319,53 @@ async function updateCodingQuestionRecord(
 async function insertTestCases(codingQuestionId: string, testCases: TestCase[]) {
   if (testCases.length === 0) return
 
-  const modernPayload = testCases.map((tc) => ({
-    coding_question_id: codingQuestionId,
-    input_data: tc.input,
-    expected_output: tc.expectedOutput,
-    is_hidden: tc.isHidden,
-  }))
+  const payloadVariants = [
+    testCases.map((tc) => ({
+      coding_question_id: codingQuestionId,
+      input_data: tc.input,
+      expected_output: tc.expectedOutput,
+      is_hidden: tc.isHidden,
+    })),
+    testCases.map((tc) => ({
+      coding_question_id: codingQuestionId,
+      input_data: tc.input,
+      expected_output: tc.expectedOutput,
+      is_visible: !tc.isHidden,
+    })),
+    testCases.map((tc) => ({
+      coding_question_id: codingQuestionId,
+      input: tc.input,
+      expected_output: tc.expectedOutput,
+      is_hidden: tc.isHidden,
+    })),
+    testCases.map((tc) => ({
+      coding_question_id: codingQuestionId,
+      input: tc.input,
+      expected_output: tc.expectedOutput,
+      is_visible: !tc.isHidden,
+    })),
+  ]
 
-  const { error: modernError } = await supabase.from('test_cases').insert(modernPayload)
-  if (!modernError) return
+  let lastError: unknown = null
 
-  const legacyPayload = testCases.map((tc) => ({
-    coding_question_id: codingQuestionId,
-    input: tc.input,
-    expected_output: tc.expectedOutput,
-    is_visible: !tc.isHidden,
-  }))
+  for (const payload of payloadVariants) {
+    const { error } = await supabase.from('test_cases').insert(payload)
+    if (!error) return
 
-  const { error: legacyError } = await supabase.from('test_cases').insert(legacyPayload)
-  if (legacyError) throw legacyError
+    lastError = error
+
+    const isSchemaMismatch =
+      isMissingColumnError(error, 'input_data') ||
+      isMissingColumnError(error, 'is_hidden') ||
+      isMissingColumnError(error, 'input') ||
+      isMissingColumnError(error, 'is_visible')
+
+    if (!isSchemaMismatch) {
+      throw error
+    }
+  }
+
+  throw lastError
 }
 
 function mapExamFromDB(dbExam: ExamRow, metadata = defaultExamMetadata): Exam {
@@ -609,12 +652,53 @@ export const codingApi = {
     }
 
     const codingRecordIds = (codingDetails || []).map((item) => item.id)
-    const { data: testCaseRows, error: testCaseError } = codingRecordIds.length === 0
-      ? { data: [] as Array<CodingTestCaseRow & { coding_question_id: string }>, error: null }
-      : await supabase
+    let testCaseRows: Array<CodingTestCaseRow & { coding_question_id: string }> = []
+    let testCaseError: { message?: string } | null = null
+
+    if (codingRecordIds.length > 0) {
+      const selectVariants = [
+        'id, coding_question_id, input_data, expected_output, is_hidden',
+        'id, coding_question_id, input_data, expected_output, is_visible',
+        'id, coding_question_id, input, expected_output, is_hidden',
+        'id, coding_question_id, input, expected_output, is_visible',
+      ]
+
+      for (const selectClause of selectVariants) {
+        const result = await supabase
           .from('test_cases')
-          .select('id, coding_question_id, input_data, input, expected_output, is_hidden, is_visible')
+          .select(selectClause)
           .in('coding_question_id', codingRecordIds)
+
+        if (!result.error) {
+          testCaseRows = ((result.data || []) as unknown as Array<Record<string, unknown>>).map((row) => ({
+            id: String(row.id ?? ''),
+            coding_question_id: String(row.coding_question_id ?? ''),
+            input_data: 'input_data' in row ? String(row.input_data ?? '') : null,
+            input: 'input' in row ? String(row.input ?? '') : null,
+            expected_output: String(row.expected_output ?? ''),
+            is_hidden: 'is_hidden' in row
+              ? Boolean(row.is_hidden)
+              : ('is_visible' in row ? row.is_visible === false : null),
+            is_visible: 'is_visible' in row ? Boolean(row.is_visible) : undefined,
+          }))
+          testCaseError = null
+          break
+        }
+
+        const isSchemaMismatch =
+          isMissingColumnError(result.error, 'input_data') ||
+          isMissingColumnError(result.error, 'is_hidden') ||
+          isMissingColumnError(result.error, 'input') ||
+          isMissingColumnError(result.error, 'is_visible')
+
+        if (!isSchemaMismatch) {
+          testCaseError = result.error
+          break
+        }
+
+        testCaseError = result.error
+      }
+    }
 
     if (testCaseError) throw testCaseError
     const codingMetadata = await getAllCodingQuestionMetadata()

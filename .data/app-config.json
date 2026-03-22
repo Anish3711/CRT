@@ -29,5 +29,18 @@
     "maxTabSwitches": 3,
     "warningMessage": "Warning: Suspicious activity detected. Further violations will terminate your exam."
   },
-  "examMetadata": {}
+  "examMetadata": {},
+  "codingQuestionMetadata": {
+    "eee13d85-241f-48db-8e9b-ff0c6a0faa24": {
+      "allowedLanguages": [
+        "python",
+        "java"
+      ]
+    },
+    "42745748-f823-4a0b-a946-952e093e2351": {
+      "allowedLanguages": [
+        "python"
+      ]
+    }
+  }
 }

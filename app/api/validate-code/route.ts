@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { executeCodeLocally } from '@/lib/local-code-execution'
+import { normalizeStdin } from '@/lib/code-input-normalizer'
 
 // Piston API language mapping
 const LANGUAGE_MAP: Record<string, { language: string, version: string }> = {
@@ -41,10 +43,40 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Coding question not found' }, { status: 404 })
       }
 
-      const { data: fetchedTestCases, error: testCaseError } = await supabase
-        .from('test_cases')
-        .select('id, input_data, input, expected_output')
-        .eq('coding_question_id', codingQuestion.id)
+      let fetchedTestCases: Array<Record<string, unknown>> = []
+      let testCaseError: { message?: string } | null = null
+
+      const selectVariants = [
+        'id, input_data, expected_output',
+        'id, input, expected_output',
+      ]
+
+      for (const selectClause of selectVariants) {
+        const result = await supabase
+          .from('test_cases')
+          .select(selectClause)
+          .eq('coding_question_id', codingQuestion.id)
+
+        if (!result.error) {
+          fetchedTestCases = (result.data || []) as unknown as Array<Record<string, unknown>>
+          testCaseError = null
+          break
+        }
+
+        const message = result.error.message.toLowerCase()
+        const isSchemaMismatch =
+          message.includes("column test_cases.input does not exist") ||
+          message.includes("column test_cases.input_data does not exist") ||
+          message.includes("could not find the 'input' column") ||
+          message.includes("could not find the 'input_data' column")
+
+        if (!isSchemaMismatch) {
+          testCaseError = result.error
+          break
+        }
+
+        testCaseError = result.error
+      }
 
       if (testCaseError) {
         return NextResponse.json({ error: 'Failed to load test cases' }, { status: 500 })
@@ -57,6 +89,13 @@ export async function POST(req: NextRequest) {
     if (!code || !resolvedLanguage || !resolvedTestCases || !Array.isArray(resolvedTestCases)) {
       return NextResponse.json(
         { error: 'Code plus either questionId or language/testCases are required' },
+        { status: 400 }
+      )
+    }
+
+    if (resolvedTestCases.length === 0) {
+      return NextResponse.json(
+        { error: 'No test cases are configured for this coding question.' },
         { status: 400 }
       )
     }
@@ -75,47 +114,72 @@ export async function POST(req: NextRequest) {
 
     for (const testCase of resolvedTestCases) {
       try {
-        const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            language: pistonLang.language,
-            version: pistonLang.version,
-            files: [
-              {
-                content: code,
-              },
-            ],
-            stdin: (testCase.input_data || testCase.input || '').trim(),
-          }),
-        })
+        const stdin = normalizeStdin(
+          code,
+          resolvedLanguage,
+          String(testCase.input_data || testCase.input || '').trim()
+        )
+        const expectedOutput = String(testCase.expected_output || '').trim()
+        let actualOutput = ''
+        let runtimeError: string | null = null
+        let exitCode = 0
 
-        const data = await response.json()
-
-        if (data.message) {
-          results.push({
-            testCaseId: testCase.id || testCase.input_data,
-            passed: false,
-            actual: '',
-            expected: testCase.expected_output,
-            error: data.message,
+        try {
+          const localResult = await executeCodeLocally({
+            code,
+            language: resolvedLanguage,
+            stdin,
           })
-          allPassed = false
-          continue
+          actualOutput = (localResult.stdout || '').trim()
+          runtimeError = localResult.stderr || null
+          exitCode = localResult.exitCode
+        } catch (localError) {
+          const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              language: pistonLang.language,
+              version: pistonLang.version,
+              files: [
+                {
+                  content: code,
+                },
+              ],
+              stdin,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (data.message) {
+            results.push({
+              testCaseId: testCase.id || testCase.input_data,
+              passed: false,
+              actual: '',
+              expected: expectedOutput,
+              error: `${data.message} Local fallback also failed: ${localError instanceof Error ? localError.message : String(localError)}`,
+            })
+            allPassed = false
+            continue
+          }
+
+          actualOutput = (data.run.stdout || '').trim()
+          runtimeError = data.run.stderr || null
+          exitCode = data.run.code || 0
         }
 
-        const actualOutput = (data.run.stdout || '').trim()
-        const expectedOutput = (testCase.expected_output || '').trim()
-        const passed = actualOutput === expectedOutput
+        const hasRuntimeError = Boolean(runtimeError && runtimeError.trim())
+        const passed = !hasRuntimeError && exitCode === 0 && actualOutput === expectedOutput
 
         results.push({
           testCaseId: testCase.id || testCase.input_data,
           passed,
           actual: actualOutput,
           expected: expectedOutput,
-          error: data.run.stderr || null,
+          error: runtimeError,
+          exitCode,
         })
 
         if (!passed) {

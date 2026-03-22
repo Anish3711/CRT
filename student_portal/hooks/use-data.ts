@@ -50,7 +50,12 @@ export function useExamCoding(examId: string | null) {
   return useSWR<CodingProblem[]>(
     examId ? `/api/exams/${examId}/coding` : null,
     fetcher,
-    { refreshInterval: 10000 }
+    {
+      refreshInterval: 10000,
+      shouldRetryOnError: false,
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+    }
   )
 }
 

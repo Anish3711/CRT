@@ -232,10 +232,6 @@ export default function ExamPage() {
           code,
           questionId,
           language: selectedLanguages[questionId] || codingQuestion.language,
-          testCases: (testCasesMap[questionId] || []).map((testCase) => ({
-            input_data: testCase.input_data || testCase.input || '',
-            expected_output: testCase.expected_output,
-          })),
         }),
       })
 
@@ -371,7 +367,7 @@ export default function ExamPage() {
 
   if (securitySettings.forceFullscreen && !isFullscreen) {
     return (
-      <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 flex items-center justify-center">
+      <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 flex items-center justify-center overflow-y-auto">
         <div className="max-w-md w-full">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-8 text-center">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
@@ -393,7 +389,7 @@ export default function ExamPage() {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-slate-900 p-4">
+    <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 overflow-y-auto">
       {suspiciousCount > 0 && (
         <Alert className="mb-4 bg-yellow-900/50 border-yellow-700">
           <AlertCircle className="h-4 w-4 text-yellow-500" />
@@ -418,7 +414,7 @@ export default function ExamPage() {
               <Button
                 onClick={isFullscreen ? exitFullscreen : requestFullscreen}
                 variant="outline"
-                className="border-slate-500 text-slate-100 hover:bg-slate-700 hover:border-slate-400 font-semibold"
+                className="border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700 hover:border-slate-400 font-semibold disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
               >
                 {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
               </Button>
@@ -452,7 +448,7 @@ export default function ExamPage() {
               onClick={() => handleQuestionSelect(Math.max(0, currentQuestionIndex - 1))}
               disabled={currentQuestionIndex === 0}
               variant="outline"
-              className="border-slate-600 text-slate-200"
+              className="border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
             >
               Previous
             </Button>

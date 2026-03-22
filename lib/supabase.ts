@@ -66,6 +66,13 @@ export type CodingQuestion = {
   language: 'python' | 'java' | 'cpp' | 'javascript'
   allowed_languages?: string[]
   starter_code: string | null
+  title?: string | null
+  description?: string | null
+  input_format?: string | null
+  output_format?: string | null
+  constraints?: string | null
+  time_limit?: number | null
+  memory_limit?: number | null
   solution_code: string | null
   created_at: string
 }
