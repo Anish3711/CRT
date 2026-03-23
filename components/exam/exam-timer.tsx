@@ -23,23 +23,23 @@ export function ExamTimer({ initialTimeRemainingSeconds, onTimeUp, isActive }: E
 
   return (
     <div className={`p-4 rounded-lg border-2 ${
-      isCritical ? 'bg-red-900/50 border-red-600' : isWarning ? 'bg-yellow-900/50 border-yellow-600' : 'bg-slate-700 border-slate-600'
+      isCritical ? 'border-zinc-950 bg-zinc-950' : isWarning ? 'border-zinc-300 bg-zinc-100' : 'border-zinc-200 bg-white'
     }`}>
       <div className="flex items-center gap-2 mb-2">
-        <Clock className={`w-5 h-5 ${isCritical ? 'text-red-400' : isWarning ? 'text-yellow-400' : 'text-blue-400'}`} />
-        <span className={`font-semibold ${isCritical ? 'text-red-200' : isWarning ? 'text-yellow-200' : 'text-slate-200'}`}>
+        <Clock className={`w-5 h-5 ${isCritical ? 'text-white' : 'text-zinc-700'}`} />
+        <span className={`font-semibold ${isCritical ? 'text-white' : 'text-zinc-700'}`}>
           Time Remaining
         </span>
       </div>
 
       <div className={`text-4xl font-mono font-bold mb-3 ${
-        isCritical ? 'text-red-300' : isWarning ? 'text-yellow-300' : 'text-white'
+        isCritical ? 'text-white' : 'text-zinc-950'
       }`}>
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
       </div>
 
       {isCritical && (
-        <div className="flex items-center gap-2 text-red-200 text-sm mb-3">
+        <div className="mb-3 flex items-center gap-2 text-sm text-zinc-200">
           <AlertCircle className="w-4 h-4" />
           <span>Less than 1 minute remaining</span>
         </div>

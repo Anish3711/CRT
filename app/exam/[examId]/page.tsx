@@ -651,18 +651,18 @@ export default function ExamPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading exam...</div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="text-lg text-zinc-900">Loading exam...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <Alert className="max-w-md bg-red-900/50 border-red-700">
-          <AlertCircle className="h-4 w-4 text-red-500" />
-          <AlertDescription className="text-red-200">{error}</AlertDescription>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+        <Alert className="max-w-md border-zinc-900 bg-white shadow-sm">
+          <AlertCircle className="h-4 w-4 text-zinc-900" />
+          <AlertDescription className="text-zinc-900">{error}</AlertDescription>
         </Alert>
       </div>
     )
@@ -670,8 +670,8 @@ export default function ExamPage() {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white">No questions available for this exam.</div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="text-zinc-900">No questions available for this exam.</div>
       </div>
     )
   }
@@ -682,22 +682,22 @@ export default function ExamPage() {
 
   if (!isSecurityReady) {
     return (
-      <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 flex items-center justify-center overflow-y-auto">
+      <div ref={containerRef} className="flex min-h-screen items-center justify-center overflow-y-auto bg-zinc-50 p-4">
         <div className="max-w-lg w-full">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-8">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-950/40">
-              <ShieldAlert className="h-8 w-8 text-red-400" />
+          <div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
+              <ShieldAlert className="h-8 w-8 text-zinc-900" />
             </div>
-            <h2 className="text-center text-xl font-bold text-white mb-2">Secure Exam Mode Required</h2>
-            <p className="text-center text-slate-300 mb-6">
+            <h2 className="mb-2 text-center text-xl font-bold text-zinc-950">Secure Exam Mode Required</h2>
+            <p className="mb-6 text-center text-zinc-600">
               Complete every security requirement before the exam can continue. The timer keeps running until submission.
             </p>
 
-            <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-950/60 p-4">
+            <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
               {securitySetupItems.map((item) => (
-                <div key={item.label} className="flex items-center justify-between gap-3 rounded-md border border-slate-800 bg-slate-900/70 px-3 py-2">
-                  <span className="text-sm text-slate-200">{item.label}</span>
-                  <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${item.ready ? 'text-emerald-300' : 'text-amber-300'}`}>
+                <div key={item.label} className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 py-2">
+                  <span className="text-sm text-zinc-900">{item.label}</span>
+                  <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${item.ready ? 'text-zinc-900' : 'text-zinc-500'}`}>
                     {item.ready ? 'Ready' : 'Pending'}
                   </span>
                 </div>
@@ -705,15 +705,15 @@ export default function ExamPage() {
             </div>
 
             {setupMessage && (
-              <Alert className="mt-4 bg-yellow-900/35 border-yellow-700">
-                <AlertCircle className="h-4 w-4 text-yellow-400" />
-                <AlertDescription className="text-yellow-100">{setupMessage}</AlertDescription>
+              <Alert className="mt-4 border-zinc-900 bg-zinc-100">
+                <AlertCircle className="h-4 w-4 text-zinc-900" />
+                <AlertDescription className="text-zinc-900">{setupMessage}</AlertDescription>
               </Alert>
             )}
 
             {securitySettings.enableWebcamMonitoring && webcamPreviewStream && (
-              <div className="mt-4 overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
-                <div className="border-b border-slate-700 px-3 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
+              <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+                <div className="border-b border-zinc-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-zinc-500">
                   Webcam Preview
                 </div>
                 <video
@@ -728,7 +728,7 @@ export default function ExamPage() {
 
             <Button
               onClick={handleSecureSetup}
-              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+              className="mt-6 w-full bg-zinc-950 py-2 font-semibold text-white hover:bg-zinc-800"
               size="lg"
             >
               Continue Secure Exam
@@ -740,37 +740,37 @@ export default function ExamPage() {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 overflow-y-auto">
+    <div ref={containerRef} className="min-h-screen overflow-y-auto bg-zinc-50 p-4 sm:p-6">
       {suspiciousCount > 0 && (
-        <Alert className="mb-4 bg-yellow-900/50 border-yellow-700">
-          <AlertCircle className="h-4 w-4 text-yellow-500" />
-          <AlertDescription className="text-yellow-200">
+        <Alert className="mb-4 border-zinc-900 bg-zinc-100">
+          <AlertCircle className="h-4 w-4 text-zinc-900" />
+          <AlertDescription className="text-zinc-900">
             {securitySettings.warningMessage} Current flags: {suspiciousCount}/{securitySettings.maxTabSwitches}.
           </AlertDescription>
         </Alert>
       )}
 
       {securityNotice && (
-        <Alert className="mb-4 bg-cyan-900/35 border-cyan-700">
-          <AlertCircle className="h-4 w-4 text-cyan-300" />
-          <AlertDescription className="text-cyan-100">{securityNotice}</AlertDescription>
+        <Alert className="mb-4 border-zinc-300 bg-white shadow-sm">
+          <AlertCircle className="h-4 w-4 text-zinc-700" />
+          <AlertDescription className="text-zinc-700">{securityNotice}</AlertDescription>
         </Alert>
       )}
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3 space-y-4">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 lg:grid-cols-4 lg:items-start">
+        <div className="space-y-4 lg:col-span-3">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-white">
+                <h1 className="text-2xl font-bold text-zinc-950">
                   {examInfo?.title || currentExam?.title || 'Exam'}
                 </h1>
-                <p className="text-slate-400 text-sm">
+                <p className="text-sm text-zinc-500">
                   Question {currentQuestionIndex + 1} of {questions.length}
                 </p>
               </div>
               {securitySettings.forceFullscreen ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-700/50 bg-emerald-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">
+                <div className="inline-flex items-center gap-2 rounded-full border border-zinc-950 bg-zinc-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white">
                   <Monitor className="h-3.5 w-3.5" />
                   Secure Lock Active
                 </div>
@@ -778,23 +778,23 @@ export default function ExamPage() {
                 <Button
                   onClick={isFullscreen ? exitFullscreen : requestFullscreen}
                   variant="outline"
-                  className="border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700 hover:border-slate-400 font-semibold disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
+                  className="border-zinc-300 bg-white font-semibold text-zinc-900 hover:bg-zinc-100 disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:opacity-100"
                 >
                   {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
                 </Button>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-3 text-xs text-slate-300">
+            <div className="flex flex-wrap gap-3 text-xs text-zinc-700">
               {securitySettings.enableScreenRecording && (
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1">
-                  <Monitor className="h-3.5 w-3.5 text-cyan-300" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1">
+                  <Monitor className="h-3.5 w-3.5 text-zinc-900" />
                   <span>{isScreenRecording ? 'Screen Recording Active' : 'Screen Recording Pending'}</span>
                 </div>
               )}
               {securitySettings.enableWebcamMonitoring && (
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1">
-                  <Camera className="h-3.5 w-3.5 text-amber-300" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1">
+                  <Camera className="h-3.5 w-3.5 text-zinc-900" />
                   <span>{isWebcamRecording ? 'Face Recording Active' : 'Face Recording Pending'}</span>
                 </div>
               )}
@@ -829,21 +829,21 @@ export default function ExamPage() {
               onClick={() => handleQuestionSelect(Math.max(0, currentQuestionIndex - 1))}
               disabled={currentQuestionIndex === 0}
               variant="outline"
-              className="border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
+              className="border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:opacity-100"
             >
               Previous
             </Button>
             <Button
               onClick={() => handleQuestionSelect(Math.min(questions.length - 1, currentQuestionIndex + 1))}
               disabled={currentQuestionIndex === questions.length - 1}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-zinc-950 text-white hover:bg-zinc-800"
             >
               Next
             </Button>
           </div>
         </div>
 
-        <div className="lg:col-span-1 space-y-4">
+        <div className="space-y-4 lg:col-span-1">
           <ExamTimer
             initialTimeRemainingSeconds={initialTimeRemainingSeconds}
             onTimeUp={handleTimeUp}
@@ -877,9 +877,9 @@ export default function ExamPage() {
 
       {statusMessage && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md">
-          <Alert className={`${statusMessage.includes('auto-submitted') ? 'bg-red-900/60 border-red-600 border-2' : 'bg-green-900/60 border-green-600 border-2'}`}>
-            <AlertCircle className={`h-5 w-5 ${statusMessage.includes('auto-submitted') ? 'text-red-400' : 'text-green-400'}`} />
-            <AlertDescription className={`font-semibold ${statusMessage.includes('auto-submitted') ? 'text-red-100' : 'text-green-100'}`}>
+          <Alert className={`${statusMessage.includes('auto-submitted') ? 'border-zinc-950 bg-zinc-950' : 'border-zinc-900 bg-white'} border-2 shadow-sm`}>
+            <AlertCircle className={`h-5 w-5 ${statusMessage.includes('auto-submitted') ? 'text-white' : 'text-zinc-900'}`} />
+            <AlertDescription className={`font-semibold ${statusMessage.includes('auto-submitted') ? 'text-white' : 'text-zinc-900'}`}>
               {statusMessage}
             </AlertDescription>
           </Alert>

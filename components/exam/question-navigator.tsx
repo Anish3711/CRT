@@ -21,18 +21,18 @@ export function QuestionNavigator({
   const unansweredCount = questions.length - answeredQuestions.size
 
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 flex flex-col h-full">
+    <div className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="mb-4">
-        <h3 className="font-semibold text-white mb-2">Questions</h3>
-        <div className="text-sm text-slate-300 space-y-1">
+        <h3 className="mb-2 font-semibold text-zinc-950">Questions</h3>
+        <div className="space-y-1 text-sm text-zinc-500">
           <div>
-            Total: <span className="text-blue-400 font-semibold">{questions.length}</span>
+            Total: <span className="font-semibold text-zinc-950">{questions.length}</span>
           </div>
           <div>
-            Answered: <span className="text-green-400 font-semibold">{answeredQuestions.size}</span>
+            Answered: <span className="font-semibold text-zinc-950">{answeredQuestions.size}</span>
           </div>
           <div>
-            Remaining: <span className="text-yellow-400 font-semibold">{unansweredCount}</span>
+            Remaining: <span className="font-semibold text-zinc-950">{unansweredCount}</span>
           </div>
         </div>
       </div>
@@ -49,10 +49,10 @@ export function QuestionNavigator({
               variant="ghost"
               className={`w-full justify-start gap-2 h-auto py-2 px-3 ${
                 isCurrent
-                  ? 'bg-blue-600/30 border border-blue-500 text-blue-200'
+                  ? 'border border-zinc-950 bg-zinc-950 text-white hover:bg-zinc-800'
                   : isAnswered
-                    ? 'bg-green-900/30 text-green-200 hover:bg-green-900/50'
-                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                    ? 'border border-zinc-200 bg-zinc-100 text-zinc-900 hover:bg-zinc-200'
+                    : 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
               }`}
             >
               {isAnswered ? (
@@ -64,23 +64,23 @@ export function QuestionNavigator({
                 Q {index + 1}
               </span>
               {question.question_type === 'coding' && (
-                <Badge className="bg-purple-900 text-purple-200 text-xs">Code</Badge>
+                <Badge className="border-zinc-200 bg-zinc-100 text-xs text-zinc-700">Code</Badge>
               )}
             </Button>
           )
         })}
       </div>
 
-      <div className="space-y-2 border-t border-slate-700 pt-4">
+      <div className="space-y-2 border-t border-zinc-200 pt-4">
         {unansweredCount > 0 && (
-          <div className="flex items-center gap-2 text-yellow-200 text-sm bg-yellow-900/20 p-2 rounded">
+          <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-700">
             <AlertCircle className="w-4 h-4" />
             <span>{unansweredCount} question{unansweredCount !== 1 ? 's' : ''} unanswered</span>
           </div>
         )}
         <Button
           onClick={onSubmitExam}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          className="w-full bg-zinc-950 text-white hover:bg-zinc-800"
         >
           Submit Exam
         </Button>

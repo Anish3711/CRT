@@ -37,22 +37,22 @@ export function MCQQuestion({
   }, [selectedOptionId, onAutoSave])
 
   const difficultyColors: Record<string, string> = {
-    easy: 'bg-green-900 text-green-200',
-    medium: 'bg-yellow-900 text-yellow-200',
-    hard: 'bg-red-900 text-red-200',
+    easy: 'border-zinc-200 bg-zinc-100 text-zinc-700',
+    medium: 'border-zinc-300 bg-zinc-200 text-zinc-800',
+    hard: 'border-zinc-900 bg-zinc-900 text-white',
   }
 
   return (
-    <Card className="select-none bg-slate-800 border-slate-700">
+    <Card className="select-none border-zinc-200 bg-white shadow-sm">
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <CardTitle className="text-white text-lg mb-2">{question.question_text}</CardTitle>
+            <CardTitle className="mb-2 text-lg text-zinc-950">{question.question_text}</CardTitle>
             <div className="flex gap-2">
               <Badge className={difficultyColors[question.difficulty]}>
                 {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
               </Badge>
-              <Badge className="bg-blue-900 text-blue-200">
+              <Badge className="border-zinc-900 bg-zinc-900 text-white">
                 {question.points} point{question.points !== 1 ? 's' : ''}
               </Badge>
             </div>
@@ -65,21 +65,25 @@ export function MCQQuestion({
           {options.map((option) => (
             <div 
               key={option.id}
-              className="flex items-center space-x-4 p-4 rounded-lg border-2 border-slate-600 hover:border-blue-500 hover:bg-slate-700/70 transition-all cursor-pointer"
+              className={`flex cursor-pointer items-center space-x-4 rounded-lg border p-4 transition-colors ${
+                selectedOptionId === option.id
+                  ? 'border-zinc-900 bg-zinc-100'
+                  : 'border-zinc-200 bg-white hover:border-zinc-900 hover:bg-zinc-50'
+              }`}
             >
-              <RadioGroupItem value={option.id} id={`option-${option.id}`} className="border-slate-400 mt-1" />
+              <RadioGroupItem value={option.id} id={`option-${option.id}`} className="mt-1 border-zinc-400 text-zinc-900" />
               <Label
                 htmlFor={`option-${option.id}`}
-                className="flex-1 text-slate-200 cursor-pointer"
+                className="flex-1 cursor-pointer text-zinc-900"
               >
-                <span className="font-semibold text-blue-400 mr-3">{option.option_key}.</span>
+                <span className="mr-3 font-semibold text-zinc-500">{option.option_key}.</span>
                 <span className="text-base">{option.option_text}</span>
               </Label>
             </div>
           ))}
         </RadioGroup>
 
-        <div className="mt-6 p-3 bg-slate-700/50 rounded text-slate-400 text-sm">
+        <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500">
           Your answer will be auto-saved every 5 seconds
         </div>
       </CardContent>

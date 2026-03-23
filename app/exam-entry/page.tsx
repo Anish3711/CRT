@@ -91,64 +91,60 @@ function ExamEntryForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,138,18,0.18),_transparent_20%),linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)] p-4">
+    <div className="min-h-screen bg-zinc-50 p-4">
       <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center py-8">
         <div className="w-full space-y-8">
           <SpecCrtBrand
             subtitle="Enter your student details to begin the SPEC CRT assessment."
           />
 
-          <Card className="border-slate-700 bg-slate-800/82 shadow-[0_24px_80px_rgba(2,6,23,0.35)]">
+          <Card className="border-zinc-200 bg-white shadow-sm">
             <CardHeader className="space-y-2">
-              <CardTitle className="text-white">Student Details</CardTitle>
-              <CardDescription className="text-slate-300">
-                Fill in your details to start the exam
-              </CardDescription>
+              <CardTitle className="text-zinc-950">Student Details</CardTitle>
+              <CardDescription className="text-zinc-500">Fill in your details to start the exam</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <Alert className="bg-red-900/50 border-red-700">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <AlertDescription className="text-red-200">{error}</AlertDescription>
+                  <Alert className="border-zinc-900 bg-zinc-100">
+                    <AlertCircle className="h-4 w-4 text-zinc-900" />
+                    <AlertDescription className="text-zinc-900">{error}</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-200">Full Name *</label>
+                  <label className="text-sm font-medium text-zinc-900">Full Name *</label>
                   <Input
                     name="name"
                     placeholder="Enter your full name"
                     value={form.name}
                     onChange={handleChange}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                    className="border-zinc-300 bg-white text-zinc-950 placeholder:text-zinc-400"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-200">Roll Number *</label>
+                  <label className="text-sm font-medium text-zinc-900">Roll Number *</label>
                   <Input
                     name="rollNo"
                     placeholder="e.g. 23BK1A6601"
                     value={form.rollNo}
                     onChange={handleChange}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                    className="border-zinc-300 bg-white text-zinc-950 placeholder:text-zinc-400"
                     required
                   />
-                  <p className="text-xs text-slate-400">
-                    Current attendance roster is limited to approved CSM roll numbers.
-                  </p>
+                  <p className="text-xs text-zinc-500">Current attendance roster is limited to approved CSM roll numbers.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-200">Year *</label>
+                    <label className="text-sm font-medium text-zinc-900">Year *</label>
                     <select
                       name="year"
                       value={form.year}
                       onChange={handleChange}
-                      className="w-full h-9 rounded-md border border-slate-600 bg-slate-700 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900"
                       required
                     >
                       <option value="" disabled>Select year</option>
@@ -160,13 +156,13 @@ function ExamEntryForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-200">Section *</label>
+                    <label className="text-sm font-medium text-zinc-900">Section *</label>
                     <Input
                       name="section"
                       placeholder="e.g. A"
                       value={form.section}
                       onChange={handleChange}
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                      className="border-zinc-300 bg-white text-zinc-950 placeholder:text-zinc-400"
                       maxLength={5}
                       required
                     />
@@ -174,14 +170,14 @@ function ExamEntryForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-200">Mobile Number *</label>
+                  <label className="text-sm font-medium text-zinc-900">Mobile Number *</label>
                   <Input
                     name="mobile"
                     type="tel"
                     placeholder="10-digit mobile number"
                     value={form.mobile}
                     onChange={handleChange}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                    className="border-zinc-300 bg-white text-zinc-950 placeholder:text-zinc-400"
                     maxLength={10}
                     required
                   />
@@ -190,7 +186,7 @@ function ExamEntryForm() {
                 <Button
                   type="submit"
                   disabled={isLoading || !examId}
-                  className="w-full bg-[#7D1D2D] text-white hover:bg-[#671827]"
+                  className="w-full bg-zinc-950 text-white hover:bg-zinc-800"
                 >
                   {isLoading ? 'Starting Exam...' : examId ? 'Start Exam' : 'No Exam Selected'}
                 </Button>
@@ -207,8 +203,8 @@ function ExamEntryForm() {
 export default function ExamEntryPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)]">
-        <div className="text-white">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="text-zinc-900">Loading...</div>
       </div>
     }>
       <ExamEntryForm />

@@ -45,44 +45,42 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,138,18,0.18),_transparent_20%),linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)]">
+    <div className="min-h-screen bg-zinc-50">
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center px-4 py-10 sm:py-14">
         {error && (
-          <Alert className="mb-6 w-full max-w-3xl border-red-700 bg-red-900/50">
-            <AlertDescription className="text-red-200">{error}</AlertDescription>
+          <Alert className="mb-6 w-full max-w-3xl border-zinc-900 bg-white shadow-sm">
+            <AlertDescription className="text-zinc-900">{error}</AlertDescription>
           </Alert>
         )}
 
-        <section className="w-full max-w-5xl rounded-[32px] border border-white/10 bg-slate-950/35 px-4 py-8 shadow-[0_24px_80px_rgba(2,6,23,0.35)] backdrop-blur sm:px-8 sm:py-10">
+        <section className="w-full max-w-5xl rounded-[28px] border border-zinc-200 bg-white px-4 py-8 shadow-sm sm:px-8 sm:py-10">
           <SpecCrtBrand
             className="mx-auto"
             subtitle="Secure Coding and Recruitment Test platform for monitored examinations. Select your exam and continue from the center of the portal."
           />
 
           <div className="mx-auto mt-10 max-w-3xl text-center">
-            <h2 className="text-2xl font-semibold text-white sm:text-3xl">Available Exams</h2>
-            <p className="mt-2 text-sm text-slate-300 sm:text-base">
-              Choose an exam to begin
-            </p>
+            <h2 className="text-2xl font-semibold text-zinc-950 sm:text-3xl">Available Exams</h2>
+            <p className="mt-2 text-sm text-zinc-500 sm:text-base">Choose an exam to begin</p>
           </div>
 
           <div className="mt-8">
             {loading ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[...Array(3)].map((_, i) => (
-                  <Card key={i} className="animate-pulse border-slate-700 bg-slate-800/70">
+                  <Card key={i} className="animate-pulse border-zinc-200 bg-white shadow-sm">
                     <CardHeader>
-                      <div className="mb-2 h-6 w-3/4 rounded bg-slate-700"></div>
-                      <div className="h-4 w-1/2 rounded bg-slate-700"></div>
+                      <div className="mb-2 h-6 w-3/4 rounded bg-zinc-200"></div>
+                      <div className="h-4 w-1/2 rounded bg-zinc-200"></div>
                     </CardHeader>
                   </Card>
                 ))}
               </div>
             ) : exams.length === 0 ? (
-              <Card className="mx-auto max-w-xl border-slate-700 bg-slate-800/80">
+              <Card className="mx-auto max-w-xl border-zinc-200 bg-white shadow-sm">
                 <CardContent className="pt-6 text-center">
-                  <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#f2b270]" />
-                  <p className="text-slate-200">No exams available at this time</p>
+                  <BookOpen className="mx-auto mb-4 h-12 w-12 text-zinc-900" />
+                  <p className="text-zinc-700">No exams available at this time</p>
                 </CardContent>
               </Card>
             ) : (
@@ -90,30 +88,30 @@ export default function DashboardPage() {
                 {exams.map((exam) => (
                   <Card
                     key={exam.id}
-                    className="border-slate-700 bg-slate-800/75 transition-colors hover:border-[#f2b270]"
+                    className="border-zinc-200 bg-white shadow-sm transition-colors hover:border-zinc-900"
                   >
                     <CardHeader>
-                      <CardTitle className="text-white">{exam.title}</CardTitle>
-                      <CardDescription className="text-slate-300">{exam.description}</CardDescription>
+                      <CardTitle className="text-zinc-950">{exam.title}</CardTitle>
+                      <CardDescription className="text-zinc-500">{exam.description}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="space-y-2 text-sm text-slate-200">
+                      <div className="space-y-2 text-sm text-zinc-600">
                         <div className="flex justify-between">
                           <span>Duration:</span>
-                          <span className="font-semibold text-[#f2b270]">{exam.duration_minutes} minutes</span>
+                          <span className="font-semibold text-zinc-950">{exam.duration_minutes} minutes</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Questions:</span>
-                          <span className="font-semibold text-[#f2b270]">{exam.total_questions}</span>
+                          <span className="font-semibold text-zinc-950">{exam.total_questions}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Passing Score:</span>
-                          <span className="font-semibold text-[#f2b270]">{exam.passing_score}%</span>
+                          <span className="font-semibold text-zinc-950">{exam.passing_score}%</span>
                         </div>
                       </div>
                       <Button
                         onClick={() => handleStartExam(exam)}
-                        className="w-full bg-[#7D1D2D] text-white hover:bg-[#671827]"
+                        className="w-full bg-zinc-950 text-white hover:bg-zinc-800"
                       >
                         Start Exam
                       </Button>
