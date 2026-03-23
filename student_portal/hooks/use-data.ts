@@ -6,6 +6,7 @@ import type {
   StudentAttempt,
   CodingSubmission,
   DashboardStats,
+  AttendanceRecord,
 } from "@/lib/api-client"
 
 const fetcher = async (url: string) => {
@@ -83,6 +84,13 @@ export function useCodingSubmissions(examId?: string) {
     : "/api/results/coding"
   return useSWR<CodingSubmission[]>(url, fetcher, {
     refreshInterval: 15000,
+    revalidateOnFocus: true,
+  })
+}
+
+export function useAttendance() {
+  return useSWR<AttendanceRecord[]>("/api/attendance", fetcher, {
+    refreshInterval: 10000,
     revalidateOnFocus: true,
   })
 }

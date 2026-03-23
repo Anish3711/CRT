@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { CODING_POINTS, MCQ_POINTS } from '@/../lib/scoring'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -85,6 +86,8 @@ export type SecuritySettings = {
   enableWebcamMonitoring: boolean
   randomizeQuestions: boolean
   randomizeTestCases: boolean
+  maxTabSwitches: number
+  warningMessage: string
 }
 
 export type MCQQuestion = {
@@ -167,10 +170,12 @@ export const defaultSecurity: SecuritySettings = {
   disableCopyPaste: true,
   disableRightClick: true,
   disableDevTools: true,
-  enableScreenRecording: false,
-  enableWebcamMonitoring: false,
+  enableScreenRecording: true,
+  enableWebcamMonitoring: true,
   randomizeQuestions: true,
   randomizeTestCases: false,
+  maxTabSwitches: 2,
+  warningMessage: "Warning: Suspicious activity detected. Further violations will terminate your exam.",
 }
 
 const defaultExamMetadata: {
@@ -185,6 +190,14 @@ const defaultExamMetadata: {
   maxAttempts: 1,
   status: 'draft' as const,
   security: defaultSecurity,
+}
+
+type ExamMetadataLike = {
+  startTime: string
+  endTime: string
+  maxAttempts: number
+  status: Exam["status"]
+  security: Partial<SecuritySettings>
 }
 
 async function loadConfigStore() {
@@ -397,7 +410,7 @@ async function insertTestCases(codingQuestionId: string, testCases: TestCase[]) 
   throw lastError
 }
 
-function mapExamFromDB(dbExam: ExamRow, metadata = defaultExamMetadata): Exam {
+function mapExamFromDB(dbExam: ExamRow, metadata: ExamMetadataLike = defaultExamMetadata): Exam {
   return {
     id: dbExam.id,
     title: dbExam.title,
@@ -409,7 +422,10 @@ function mapExamFromDB(dbExam: ExamRow, metadata = defaultExamMetadata): Exam {
     maxAttempts: metadata.maxAttempts,
     status: metadata.status,
     questionCount: dbExam.total_questions || 0,
-    security: metadata.security,
+    security: {
+      ...defaultSecurity,
+      ...metadata.security,
+    },
     createdAt: dbExam.created_at,
   }
 }
@@ -580,7 +596,7 @@ export const questionApi = {
         exam_id: examId,
         question_type: 'mcq',
         question_text: data.questionText,
-        points: 1,
+        points: MCQ_POINTS,
         difficulty: 'medium',
         order_index: orderIndex,
       })
@@ -784,7 +800,7 @@ export const codingApi = {
         exam_id: examId,
         question_type: 'coding',
         question_text: data.title || data.description || 'Untitled',
-        points: 10,
+        points: CODING_POINTS,
         difficulty: 'medium',
         order_index: orderIndex,
       })

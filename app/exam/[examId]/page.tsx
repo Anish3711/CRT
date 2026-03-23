@@ -7,7 +7,7 @@ import type { Question, MCQOption, CodingQuestion, TestCase, Exam } from '@/lib/
 import { ExamTimer } from '@/components/exam/exam-timer'
 import { QuestionNavigator } from '@/components/exam/question-navigator'
 import { MCQQuestion } from '@/components/exam/mcq-question'
-import { CodeEditor } from '@/components/exam/code-editor'
+import { CodeEditor, type CodeValidationFeedback } from '@/components/exam/code-editor'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -19,8 +19,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
-import { useActivityDetection, useFullscreenEnforcement, type SuspiciousActivity } from '@/app/hooks/use-exam-hooks'
+import { AlertCircle, Camera, Monitor, ShieldAlert } from 'lucide-react'
+import {
+  useActivityDetection,
+  useFullscreenEnforcement,
+  useMediaProctoring,
+  type SuspiciousActivity,
+} from '@/app/hooks/use-exam-hooks'
 
 type SecuritySettings = {
   forceFullscreen: boolean
@@ -42,8 +47,8 @@ const defaultSecuritySettings: SecuritySettings = {
   disableCopyPaste: true,
   disableRightClick: true,
   disableDevTools: true,
-  enableScreenRecording: false,
-  enableWebcamMonitoring: false,
+  enableScreenRecording: true,
+  enableWebcamMonitoring: true,
   randomizeQuestions: true,
   randomizeTestCases: false,
   maxTabSwitches: 2,
@@ -87,6 +92,11 @@ function mapStoredViolation(value: unknown): SuspiciousActivity | null {
   }
 }
 
+type SecuritySetupItem = {
+  label: string
+  ready: boolean
+}
+
 export default function ExamPage() {
   const params = useParams()
   const router = useRouter()
@@ -100,6 +110,7 @@ export default function ExamPage() {
   const [mcqOptions, setMcqOptions] = useState<Record<string, MCQOption[]>>({})
   const [codingQuestionsMap, setCodingQuestionsMap] = useState<Record<string, CodingQuestion>>({})
   const [testCasesMap, setTestCasesMap] = useState<Record<string, TestCase[]>>({})
+  const [initialTimeRemainingSeconds, setInitialTimeRemainingSeconds] = useState(60 * 60)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({})
   const [selectedLanguages, setSelectedLanguages] = useState<Record<string, string>>({})
@@ -110,12 +121,81 @@ export default function ExamPage() {
   const [error, setError] = useState('')
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+  const [securityNotice, setSecurityNotice] = useState('')
+  const [codeValidationFeedback, setCodeValidationFeedback] = useState<CodeValidationFeedback | null>(null)
 
   const { containerRef, isFullscreen, requestFullscreen, exitFullscreen } = useFullscreenEnforcement(true)
-  const { flushLogs, suspiciousActivities } = useActivityDetection(attemptId, true, initialSuspiciousActivities)
+  const { flushLogs, suspiciousActivities, recordActivity } = useActivityDetection(
+    attemptId,
+    true,
+    initialSuspiciousActivities,
+    {
+      disableCopyPaste: securitySettings.disableCopyPaste,
+      disableRightClick: securitySettings.disableRightClick,
+    }
+  )
 
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const autoSubmittedRef = useRef(false)
+  const fullscreenViolationLoggedRef = useRef(false)
+  const secureSessionActivatedRef = useRef(false)
+  const webcamPreviewRef = useRef<HTMLVideoElement | null>(null)
+
+  const handleProctoringIncident = useCallback((message: string, activityType: string) => {
+    setSecurityNotice(message)
+    recordActivity({
+      type: activityType,
+      severity: 'high',
+      description: message,
+      timestamp: new Date().toISOString(),
+    })
+  }, [recordActivity])
+
+  const {
+    isRecording: isScreenRecording,
+    error: screenRecordingError,
+    startRecording: startScreenRecording,
+    stopRecording: stopScreenRecording,
+  } = useMediaProctoring({
+    sessionId: attemptId,
+    enabled: securitySettings.enableScreenRecording,
+    kind: 'screen',
+    onIncident: (incident) => {
+      handleProctoringIncident(incident.message, 'screen_recording_stopped')
+    },
+  })
+
+  const {
+    isRecording: isWebcamRecording,
+    error: webcamMonitoringError,
+    previewStream: webcamPreviewStream,
+    startRecording: startWebcamMonitoring,
+    stopRecording: stopWebcamMonitoring,
+  } = useMediaProctoring({
+    sessionId: attemptId,
+    enabled: securitySettings.enableWebcamMonitoring,
+    kind: 'webcam',
+    onIncident: (incident) => {
+      handleProctoringIncident(incident.message, 'webcam_monitoring_stopped')
+    },
+  })
+
+  const securitySetupItems: SecuritySetupItem[] = [
+    {
+      label: 'Fullscreen lock',
+      ready: !securitySettings.forceFullscreen || isFullscreen,
+    },
+    {
+      label: 'Screen recording',
+      ready: !securitySettings.enableScreenRecording || isScreenRecording,
+    },
+    {
+      label: 'Face recording',
+      ready: !securitySettings.enableWebcamMonitoring || isWebcamRecording,
+    },
+  ]
+
+  const isSecurityReady = securitySetupItems.every((item) => item.ready)
 
   useEffect(() => {
     const storedAttemptId = localStorage.getItem('attemptId')
@@ -159,6 +239,11 @@ export default function ExamPage() {
         const questionList = data.questions || []
         setQuestions(questionList)
         setExamInfo(data.exam || null)
+        setInitialTimeRemainingSeconds(
+          typeof data.attemptState?.secondsRemaining === 'number'
+            ? data.attemptState.secondsRemaining
+            : (data.exam?.duration_minutes || 60) * 60
+        )
         if (data.exam) {
           setCurrentExam(data.exam)
         }
@@ -246,6 +331,17 @@ export default function ExamPage() {
   }, [attemptId, loading, requestFullscreen, securitySettings.forceFullscreen])
 
   useEffect(() => {
+    const previewElement = webcamPreviewRef.current
+    if (!previewElement) return
+
+    previewElement.srcObject = webcamPreviewStream
+
+    return () => {
+      previewElement.srcObject = null
+    }
+  }, [webcamPreviewStream])
+
+  useEffect(() => {
     if (!attemptId || !isAttemptStateHydrated) return
     localStorage.setItem(getAttemptStorageKey(attemptId, 'answers'), JSON.stringify(studentAnswers))
   }, [attemptId, isAttemptStateHydrated, studentAnswers])
@@ -295,6 +391,73 @@ export default function ExamPage() {
     }
   }, [attemptId, flushLogs, persistAnswers])
 
+  useEffect(() => {
+    setCodeValidationFeedback(null)
+  }, [currentQuestionIndex])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated) return
+
+    if (isSecurityReady) {
+      secureSessionActivatedRef.current = true
+      fullscreenViolationLoggedRef.current = false
+    }
+  }, [attemptId, isAttemptStateHydrated, isSecurityReady])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated || !securitySettings.forceFullscreen) return
+
+    if (isFullscreen) {
+      fullscreenViolationLoggedRef.current = false
+      return
+    }
+
+    if (!secureSessionActivatedRef.current || fullscreenViolationLoggedRef.current) {
+      return
+    }
+
+    fullscreenViolationLoggedRef.current = true
+    handleProctoringIncident(
+      'Fullscreen mode was exited during the exam. Re-enter secure mode to continue.',
+      'fullscreen_exit'
+    )
+  }, [
+    attemptId,
+    handleProctoringIncident,
+    isAttemptStateHydrated,
+    isFullscreen,
+    securitySettings.forceFullscreen,
+  ])
+
+  const handleSecureSetup = useCallback(async () => {
+    setSecurityNotice('')
+
+    const setupResults = await Promise.all([
+      securitySettings.forceFullscreen ? requestFullscreen() : Promise.resolve(true),
+      securitySettings.enableScreenRecording ? startScreenRecording() : Promise.resolve(true),
+      securitySettings.enableWebcamMonitoring ? startWebcamMonitoring() : Promise.resolve(true),
+    ])
+
+    const success = setupResults.every(Boolean)
+
+    if (success) {
+      secureSessionActivatedRef.current = true
+      setSecurityNotice('')
+      return
+    }
+
+    setSecurityNotice(
+      'Secure mode could not be completed. Allow fullscreen, screen sharing, and webcam access to continue the exam.'
+    )
+  }, [
+    requestFullscreen,
+    securitySettings.enableScreenRecording,
+    securitySettings.enableWebcamMonitoring,
+    securitySettings.forceFullscreen,
+    startScreenRecording,
+    startWebcamMonitoring,
+  ])
+
   const saveAnswerLocally = (questionId: string, value: string) => {
     setStudentAnswers((prev) => ({ ...prev, [questionId]: value }))
     setAnsweredQuestions((prev) => {
@@ -315,6 +478,7 @@ export default function ExamPage() {
 
   const handleCodeChange = (code: string) => {
     const questionId = questions[currentQuestionIndex].id
+    setCodeValidationFeedback(null)
     saveAnswerLocally(questionId, code)
   }
 
@@ -328,7 +492,11 @@ export default function ExamPage() {
     const codingQuestion = codingQuestionsMap[questionId]
 
     if (!code || !codingQuestion) {
-      alert('Please write code before validating your solution.')
+      setCodeValidationFeedback({
+        status: 'warning',
+        title: 'Write your solution first',
+        message: 'Enter code before checking it against the hidden evaluator cases.',
+      })
       return
     }
 
@@ -347,14 +515,26 @@ export default function ExamPage() {
       if (!res.ok) throw new Error(result.error || 'Validation failed')
 
       if (result.allPassed) {
-        alert('All test cases passed. Your solution is correct.')
+        setCodeValidationFeedback({
+          status: 'success',
+          title: 'All test cases passed',
+          message: 'Your solution matched every evaluator case for this problem.',
+        })
       } else {
         const passCount = result.results.filter((item: { passed: boolean }) => item.passed).length
         const totalCount = result.results.length
-        alert(`${passCount}/${totalCount} test cases passed. Keep trying.`)
+        setCodeValidationFeedback({
+          status: 'warning',
+          title: 'Some test cases still failed',
+          message: `${passCount}/${totalCount} test cases passed. Refine the solution and run the check again.`,
+        })
       }
     } catch (err) {
-      alert(`Error validating code: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setCodeValidationFeedback({
+        status: 'error',
+        title: 'Validation failed',
+        message: err instanceof Error ? err.message : 'Unknown error while validating your code.',
+      })
     }
   }
 
@@ -396,6 +576,15 @@ export default function ExamPage() {
         throw new Error(data.error || 'Failed to submit exam')
       }
 
+      secureSessionActivatedRef.current = false
+      setSecurityNotice('')
+
+      await Promise.allSettled([
+        stopScreenRecording(),
+        stopWebcamMonitoring(),
+        exitFullscreen(),
+      ])
+
       clearAttemptStorage()
 
       if (autoSubmitted) {
@@ -410,7 +599,19 @@ export default function ExamPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit exam')
     }
-  }, [attemptId, clearAttemptStorage, examId, flushLogs, persistAnswers, router, selectedLanguages, studentAnswers])
+  }, [
+    attemptId,
+    clearAttemptStorage,
+    examId,
+    exitFullscreen,
+    flushLogs,
+    persistAnswers,
+    router,
+    selectedLanguages,
+    stopScreenRecording,
+    studentAnswers,
+    stopWebcamMonitoring,
+  ])
 
   const handleAutoSubmitViolation = useCallback(async () => {
     if (!attemptId) return
@@ -477,23 +678,60 @@ export default function ExamPage() {
 
   const currentQuestion = questions[currentQuestionIndex]
   const suspiciousCount = suspiciousActivities.length
+  const setupMessage = securityNotice || screenRecordingError || webcamMonitoringError
 
-  if (securitySettings.forceFullscreen && !isFullscreen) {
+  if (!isSecurityReady) {
     return (
       <div ref={containerRef} className="min-h-screen bg-slate-900 p-4 flex items-center justify-center overflow-y-auto">
-        <div className="max-w-md w-full">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-8 text-center">
-            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Fullscreen Mode Required</h2>
-            <p className="text-slate-300 mb-6">
-              To maintain exam integrity, you must enter fullscreen mode before continuing.
+        <div className="max-w-lg w-full">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-8">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-950/40">
+              <ShieldAlert className="h-8 w-8 text-red-400" />
+            </div>
+            <h2 className="text-center text-xl font-bold text-white mb-2">Secure Exam Mode Required</h2>
+            <p className="text-center text-slate-300 mb-6">
+              Complete every security requirement before the exam can continue. The timer keeps running until submission.
             </p>
+
+            <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-950/60 p-4">
+              {securitySetupItems.map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-3 rounded-md border border-slate-800 bg-slate-900/70 px-3 py-2">
+                  <span className="text-sm text-slate-200">{item.label}</span>
+                  <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${item.ready ? 'text-emerald-300' : 'text-amber-300'}`}>
+                    {item.ready ? 'Ready' : 'Pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {setupMessage && (
+              <Alert className="mt-4 bg-yellow-900/35 border-yellow-700">
+                <AlertCircle className="h-4 w-4 text-yellow-400" />
+                <AlertDescription className="text-yellow-100">{setupMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            {securitySettings.enableWebcamMonitoring && webcamPreviewStream && (
+              <div className="mt-4 overflow-hidden rounded-lg border border-slate-700 bg-slate-950">
+                <div className="border-b border-slate-700 px-3 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
+                  Webcam Preview
+                </div>
+                <video
+                  ref={webcamPreviewRef}
+                  className="h-40 w-full object-cover"
+                  autoPlay
+                  muted
+                  playsInline
+                />
+              </div>
+            )}
+
             <Button
-              onClick={requestFullscreen}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+              onClick={handleSecureSetup}
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
               size="lg"
             >
-              Enter Fullscreen
+              Continue Secure Exam
             </Button>
           </div>
         </div>
@@ -512,6 +750,13 @@ export default function ExamPage() {
         </Alert>
       )}
 
+      {securityNotice && (
+        <Alert className="mb-4 bg-cyan-900/35 border-cyan-700">
+          <AlertCircle className="h-4 w-4 text-cyan-300" />
+          <AlertDescription className="text-cyan-100">{securityNotice}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
@@ -524,13 +769,35 @@ export default function ExamPage() {
                   Question {currentQuestionIndex + 1} of {questions.length}
                 </p>
               </div>
-              <Button
-                onClick={isFullscreen ? exitFullscreen : requestFullscreen}
-                variant="outline"
-                className="border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700 hover:border-slate-400 font-semibold disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
-              >
-                {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-              </Button>
+              {securitySettings.forceFullscreen ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-700/50 bg-emerald-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">
+                  <Monitor className="h-3.5 w-3.5" />
+                  Secure Lock Active
+                </div>
+              ) : (
+                <Button
+                  onClick={isFullscreen ? exitFullscreen : requestFullscreen}
+                  variant="outline"
+                  className="border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700 hover:border-slate-400 font-semibold disabled:border-slate-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-100"
+                >
+                  {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3 text-xs text-slate-300">
+              {securitySettings.enableScreenRecording && (
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1">
+                  <Monitor className="h-3.5 w-3.5 text-cyan-300" />
+                  <span>{isScreenRecording ? 'Screen Recording Active' : 'Screen Recording Pending'}</span>
+                </div>
+              )}
+              {securitySettings.enableWebcamMonitoring && (
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1">
+                  <Camera className="h-3.5 w-3.5 text-amber-300" />
+                  <span>{isWebcamRecording ? 'Face Recording Active' : 'Face Recording Pending'}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -553,6 +820,7 @@ export default function ExamPage() {
               onLanguageChange={(language) => handleLanguageChange(currentQuestion.id, language)}
               onSubmit={handleCodeSubmit}
               onAutoSave={persistAnswers}
+              validationFeedback={codeValidationFeedback}
             />
           )}
 
@@ -577,7 +845,7 @@ export default function ExamPage() {
 
         <div className="lg:col-span-1 space-y-4">
           <ExamTimer
-            durationMinutes={examInfo?.duration_minutes || currentExam?.duration_minutes || 60}
+            initialTimeRemainingSeconds={initialTimeRemainingSeconds}
             onTimeUp={handleTimeUp}
             isActive={true}
           />

@@ -24,7 +24,16 @@ import { type SecuritySettings, defaultSecurity } from "@/lib/api-client"
 const fetcher = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null))
 
 type SecurityField = {
-  key: keyof SecuritySettings
+  key:
+    | "forceFullscreen"
+    | "cancelOnTabSwitch"
+    | "disableCopyPaste"
+    | "disableRightClick"
+    | "disableDevTools"
+    | "enableScreenRecording"
+    | "enableWebcamMonitoring"
+    | "randomizeQuestions"
+    | "randomizeTestCases"
   label: string
   description: string
   icon: React.ElementType
@@ -94,7 +103,7 @@ export default function SecurityPage() {
   )
 
   const [settings, setSettings] = useState<SecuritySettings>(defaultSecurity)
-  const [maxTabSwitches, setMaxTabSwitches] = useState("3")
+  const [maxTabSwitches, setMaxTabSwitches] = useState("2")
   const [warningMessage, setWarningMessage] = useState(
     "Warning: Suspicious activity detected. Further violations will terminate your exam."
   )
@@ -105,6 +114,8 @@ export default function SecurityPage() {
   useEffect(() => {
     if (serverSettings) {
       setSettings(serverSettings)
+      setMaxTabSwitches(String(serverSettings.maxTabSwitches))
+      setWarningMessage(serverSettings.warningMessage)
     }
   }, [serverSettings])
 
@@ -132,7 +143,7 @@ export default function SecurityPage() {
     }
   }
 
-  const enabledCount = Object.values(settings).filter(Boolean).length
+  const enabledCount = securityFields.filter((field) => settings[field.key]).length
 
   if (isLoading) {
     return (

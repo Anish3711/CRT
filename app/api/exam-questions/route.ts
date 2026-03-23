@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getAllCodingQuestionMetadata } from '@/lib/app-config-store'
+import { getQuestionPoints } from '@/lib/scoring'
 
 type McqOptionRow = {
   id: string
@@ -227,12 +228,14 @@ export async function GET(req: NextRequest) {
       answers: Record<string, string>
       violations: unknown[]
       status: string
+      startedAt: string | null
+      secondsRemaining: number
     } | null = null
 
     if (attemptId) {
       const { data: attempt, error: attemptError } = await supabase
         .from('guest_attempts')
-        .select('answers, violations, status')
+        .select('answers, violations, status, start_time')
         .eq('id', attemptId)
         .eq('exam_id', examId)
         .maybeSingle()
@@ -240,10 +243,19 @@ export async function GET(req: NextRequest) {
       if (attemptError) {
         console.error('Error fetching guest attempt state:', attemptError)
       } else if (attempt) {
+        const startedAt = typeof attempt.start_time === 'string' ? attempt.start_time : null
+        const startedAtMs = startedAt ? Date.parse(startedAt) : Number.NaN
+        const elapsedSeconds = Number.isFinite(startedAtMs)
+          ? Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000))
+          : 0
+        const secondsRemaining = Math.max(0, (exam.duration_minutes || 0) * 60 - elapsedSeconds)
+
         attemptState = {
           answers: attempt.answers && typeof attempt.answers === 'object' ? attempt.answers as Record<string, string> : {},
           violations: Array.isArray(attempt.violations) ? attempt.violations : [],
           status: attempt.status || 'ongoing',
+          startedAt,
+          secondsRemaining,
         }
       }
     }
@@ -261,7 +273,7 @@ export async function GET(req: NextRequest) {
         question_text: q.question_text,
         question_type: q.question_type,
         difficulty: q.difficulty,
-        points: q.points,
+        points: getQuestionPoints(q.question_type),
         order_index: q.order_index,
       })),
       mcqOptions,

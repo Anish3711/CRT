@@ -43,7 +43,7 @@ export function MCQQuestion({
   }
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="select-none bg-slate-800 border-slate-700">
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">

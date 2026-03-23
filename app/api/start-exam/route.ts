@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import { getExamMetadata } from '@/lib/app-config-store'
+import { isAllowedCsmRollNumber, normalizeRollNumber } from '@/lib/attendance-roster'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,9 +13,16 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { name, rollNo, year, section, mobile, examId } = body
+    const normalizedRollNo = typeof rollNo === 'string' ? normalizeRollNumber(rollNo) : ''
 
-    if (!name || !rollNo || !year || !section || !mobile || !examId) {
+    if (!name || !normalizedRollNo || !year || !section || !mobile || !examId) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
+    }
+
+    if (!isAllowedCsmRollNumber(normalizedRollNo)) {
+      return NextResponse.json({
+        error: 'Roll number is not part of the current CSM attendance roster.',
+      }, { status: 400 })
     }
 
     const [metadata, attemptsResult] = await Promise.all([
@@ -23,7 +31,7 @@ export async function POST(req: NextRequest) {
       .from('guest_attempts')
       .select('id, status')
       .eq('exam_id', examId)
-      .eq('roll_no', rollNo)
+      .eq('roll_no', normalizedRollNo)
     ])
 
     if (attemptsResult.error) {
@@ -60,7 +68,7 @@ export async function POST(req: NextRequest) {
       .insert({
         id: attemptId,
         name,
-        roll_no: rollNo,
+        roll_no: normalizedRollNo,
         year,
         section,
         mobile,

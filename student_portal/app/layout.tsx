@@ -4,24 +4,11 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'SPEC CRT - Faculty Control Panel',
-  description: 'Faculty Control Panel for Secure CRT Testing',
-  generator: 'v0.app',
+  description: 'Faculty control panel for SPEC CRT at St. Peter\'s Engineering College',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/spec-crt-favicon.svg',
+    shortcut: '/spec-crt-favicon.svg',
+    apple: '/spec-crt-favicon.svg',
   },
 }
 

@@ -7,10 +7,11 @@ import {
   FileText,
   MonitorDot,
   BarChart3,
+  UserCheck,
   ShieldCheck,
   Settings,
   LogOut,
-  Shield,
+  PanelLeftClose,
 } from "lucide-react"
 
 import {
@@ -34,6 +35,7 @@ const navMain = [
 
 const navMonitor = [
   { title: "Monitoring", url: "/dashboard/monitoring", icon: MonitorDot },
+  { title: "Attendance", url: "/dashboard/attendance", icon: UserCheck },
   { title: "Results", url: "/dashboard/results", icon: BarChart3 },
 ]
 
@@ -61,15 +63,19 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-4">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-            <Shield className="size-4 text-primary-foreground" />
+        <div className="rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-xl bg-sidebar-primary/12 text-sidebar-primary">
+              <PanelLeftClose className="size-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Navigation
+              </span>
+              <span className="text-sm font-medium text-sidebar-foreground">Faculty Navigation</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-sidebar-foreground">SPEC CRT</span>
-            <span className="text-[10px] text-muted-foreground">Admin Panel</span>
-          </div>
-        </Link>
+        </div>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>

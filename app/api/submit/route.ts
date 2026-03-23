@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { calculateMaximumScore, getQuestionPoints } from '@/lib/scoring'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,11 +35,11 @@ export async function POST(req: NextRequest) {
 
       if (questions && questions.length > 0) {
         totalQuestions = questions.length
-        maxPoints = questions.reduce((sum, question) => sum + (question.points || 0), 0)
+        maxPoints = calculateMaximumScore(questions)
 
         const questionPoints = new Map<string, number>()
         for (const question of questions) {
-          questionPoints.set(question.id, question.points || 0)
+          questionPoints.set(question.id, getQuestionPoints(question.question_type))
         }
 
         const mcqIds = questions.filter((question) => question.question_type === 'mcq').map((question) => question.id)

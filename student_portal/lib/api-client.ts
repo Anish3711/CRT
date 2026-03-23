@@ -23,6 +23,8 @@ export type SecuritySettings = {
   enableWebcamMonitoring: boolean
   randomizeQuestions: boolean
   randomizeTestCases: boolean
+  maxTabSwitches: number
+  warningMessage: string
 }
 
 export type MCQQuestion = {
@@ -99,6 +101,15 @@ export type CodingSubmission = {
   memoryUsage: string
 }
 
+export type AttendanceRecord = {
+  department: "CSM"
+  rollNumber: string
+  studentName: string | null
+  status: "present" | "absent"
+  lastSeenAt: string | null
+  attemptStatus: string | null
+}
+
 export type DashboardStats = {
   totalExams: number
   activeExams: number
@@ -114,8 +125,10 @@ export const defaultSecurity: SecuritySettings = {
   disableCopyPaste: true,
   disableRightClick: true,
   disableDevTools: true,
-  enableScreenRecording: false,
-  enableWebcamMonitoring: false,
+  enableScreenRecording: true,
+  enableWebcamMonitoring: true,
   randomizeQuestions: true,
   randomizeTestCases: false,
+  maxTabSwitches: 2,
+  warningMessage: "Warning: Suspicious activity detected. Further violations will terminate your exam.",
 }

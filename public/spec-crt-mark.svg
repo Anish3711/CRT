@@ -1,0 +1,13 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M40 82L103 137H111L128 156L145 137H153L216 82L128 176L40 82Z" fill="#7D1D2D"/>
+  <path d="M118 118H138V150H118V118Z" fill="white"/>
+  <path d="M128 38C147.882 38 164 54.118 164 74C164 93.882 147.882 110 128 110C108.118 110 92 93.882 92 74C92 54.118 108.118 38 128 38ZM128 56C118.059 56 110 64.059 110 74C110 83.941 118.059 92 128 92C137.941 92 146 83.941 146 74C146 64.059 137.941 56 128 56Z" fill="#FF8A12"/>
+  <rect x="120" y="24" width="16" height="20" rx="2" fill="#FF8A12"/>
+  <rect x="120" y="104" width="16" height="20" rx="2" fill="#FF8A12"/>
+  <rect x="168" y="66" width="20" height="16" rx="2" fill="#FF8A12"/>
+  <rect x="68" y="66" width="20" height="16" rx="2" fill="#FF8A12"/>
+  <rect x="157.698" y="33.372" width="16" height="20" rx="2" transform="rotate(45 157.698 33.372)" fill="#FF8A12"/>
+  <rect x="101.13" y="89.941" width="16" height="20" rx="2" transform="rotate(45 101.13 89.941)" fill="#FF8A12"/>
+  <rect x="173.255" y="90.5039" width="16" height="20" rx="2" transform="rotate(135 173.255 90.5039)" fill="#FF8A12"/>
+  <rect x="116.687" y="33.9355" width="16" height="20" rx="2" transform="rotate(135 116.687 33.9355)" fill="#FF8A12"/>
+</svg>

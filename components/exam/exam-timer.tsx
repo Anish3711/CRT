@@ -3,13 +3,13 @@ import { useExamTimer } from '@/app/hooks/use-exam-hooks'
 import { AlertCircle, Clock } from 'lucide-react'
 
 interface ExamTimerProps {
-  durationMinutes: number
+  initialTimeRemainingSeconds: number
   onTimeUp: () => void
   isActive: boolean
 }
 
-export function ExamTimer({ durationMinutes, onTimeUp, isActive }: ExamTimerProps) {
-  const { minutes, seconds, start } = useExamTimer(durationMinutes, onTimeUp)
+export function ExamTimer({ initialTimeRemainingSeconds, onTimeUp, isActive }: ExamTimerProps) {
+  const { minutes, seconds, start } = useExamTimer(initialTimeRemainingSeconds, onTimeUp)
 
   // Auto-start timer when isActive becomes true
   useEffect(() => {

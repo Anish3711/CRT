@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, BookOpen } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { SpecCrtBrand } from '@/components/branding/spec-crt-brand'
 
 function ExamEntryForm() {
   const router = useRouter()
@@ -32,7 +33,13 @@ function ExamEntryForm() {
   }, [examId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    const normalizedValue =
+      name === 'rollNo' || name === 'section'
+        ? value.toUpperCase()
+        : value
+
+    setForm(prev => ({ ...prev, [name]: normalizedValue }))
   }
 
   const validate = (): string => {
@@ -84,114 +91,113 @@ function ExamEntryForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 rounded-full p-3">
-              <BookOpen className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">SecureCRT</h1>
-          <p className="text-slate-300">Secure Exam Portal</p>
-        </div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,138,18,0.18),_transparent_20%),linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)] p-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center py-8">
+        <div className="w-full space-y-8">
+          <SpecCrtBrand
+            subtitle="Enter your student details to begin the SPEC CRT assessment."
+          />
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-white">Student Details</CardTitle>
-            <CardDescription className="text-slate-300">
-              Fill in your details to start the exam
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert className="bg-red-900/50 border-red-700">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <AlertDescription className="text-red-200">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-200">Full Name *</label>
-                <Input
-                  name="name"
-                  placeholder="Enter your full name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-200">Roll Number *</label>
-                <Input
-                  name="rollNo"
-                  placeholder="e.g. 21BCI0001"
-                  value={form.rollNo}
-                  onChange={handleChange}
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-200">Year *</label>
-                  <select
-                    name="year"
-                    value={form.year}
-                    onChange={handleChange}
-                    className="w-full h-9 rounded-md border border-slate-600 bg-slate-700 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="" disabled>Select year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                  </select>
-                </div>
+          <Card className="border-slate-700 bg-slate-800/82 shadow-[0_24px_80px_rgba(2,6,23,0.35)]">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-white">Student Details</CardTitle>
+              <CardDescription className="text-slate-300">
+                Fill in your details to start the exam
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <Alert className="bg-red-900/50 border-red-700">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <AlertDescription className="text-red-200">{error}</AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-200">Section *</label>
+                  <label className="text-sm font-medium text-slate-200">Full Name *</label>
                   <Input
-                    name="section"
-                    placeholder="e.g. A"
-                    value={form.section}
+                    name="name"
+                    placeholder="Enter your full name"
+                    value={form.name}
                     onChange={handleChange}
                     className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                    maxLength={5}
                     required
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-200">Mobile Number *</label>
-                <Input
-                  name="mobile"
-                  type="tel"
-                  placeholder="10-digit mobile number"
-                  value={form.mobile}
-                  onChange={handleChange}
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                  maxLength={10}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-200">Roll Number *</label>
+                  <Input
+                    name="rollNo"
+                    placeholder="e.g. 23BK1A6601"
+                    value={form.rollNo}
+                    onChange={handleChange}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                    required
+                  />
+                  <p className="text-xs text-slate-400">
+                    Current attendance roster is limited to approved CSM roll numbers.
+                  </p>
+                </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading || !examId}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isLoading ? 'Starting Exam...' : examId ? 'Start Exam' : 'No Exam Selected'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-200">Year *</label>
+                    <select
+                      name="year"
+                      value={form.year}
+                      onChange={handleChange}
+                      className="w-full h-9 rounded-md border border-slate-600 bg-slate-700 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="" disabled>Select year</option>
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-200">Section *</label>
+                    <Input
+                      name="section"
+                      placeholder="e.g. A"
+                      value={form.section}
+                      onChange={handleChange}
+                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                      maxLength={5}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-200">Mobile Number *</label>
+                  <Input
+                    name="mobile"
+                    type="tel"
+                    placeholder="10-digit mobile number"
+                    value={form.mobile}
+                    onChange={handleChange}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading || !examId}
+                  className="w-full bg-[#7D1D2D] text-white hover:bg-[#671827]"
+                >
+                  {isLoading ? 'Starting Exam...' : examId ? 'Start Exam' : 'No Exam Selected'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
@@ -201,7 +207,7 @@ function ExamEntryForm() {
 export default function ExamEntryPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)]">
         <div className="text-white">Loading...</div>
       </div>
     }>

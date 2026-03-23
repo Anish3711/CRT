@@ -4,16 +4,12 @@ import { ExamProvider } from './contexts/exam-context'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SecureCRT - Secure Exam Portal',
-  description: 'Secure coding and multiple-choice exam portal with proctoring',
-  generator: 'v0.app',
+  title: 'SPEC CRT - Secure Exam Portal',
+  description: 'Secure exam portal for SPEC CRT at St. Peter\'s Engineering College',
   icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/spec-crt-favicon.svg',
+    shortcut: '/spec-crt-favicon.svg',
+    apple: '/spec-crt-favicon.svg',
   },
 }
 

@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, Home } from 'lucide-react'
+import { SpecCrtBrand } from '@/components/branding/spec-crt-brand'
 
 export default function ResultsPage() {
   const params = useParams()
@@ -11,14 +12,14 @@ export default function ResultsPage() {
   const attemptId = params.sessionId as string
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,138,18,0.18),_transparent_20%),linear-gradient(180deg,_#0b1526_0%,_#13233b_55%,_#101827_100%)] p-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">SecureCRT</h1>
-          <p className="text-slate-300">Exam Submitted</p>
-        </div>
+        <SpecCrtBrand
+          className="mb-8"
+          subtitle="Your SPEC CRT session has been submitted successfully."
+        />
 
-        <Card className="bg-slate-800 border-2 border-green-600 mb-6">
+        <Card className="bg-slate-800/82 border-2 border-green-600 mb-6">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <CheckCircle className="w-16 h-16 text-green-400" />
@@ -43,7 +44,7 @@ export default function ResultsPage() {
         <div className="flex gap-4 justify-center">
           <Button
             onClick={() => router.push('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+            className="bg-[#7D1D2D] text-white hover:bg-[#671827] flex items-center gap-2"
           >
             <Home className="w-4 h-4" />
             Back to Home

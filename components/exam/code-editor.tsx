@@ -14,6 +14,12 @@ import {
 import { type Question, type CodingQuestion, type TestCase } from '@/lib/supabase'
 import { Code2, Play, Copy, Check, Zap, TerminalSquare } from 'lucide-react'
 
+export type CodeValidationFeedback = {
+  status: 'success' | 'warning' | 'error'
+  title: string
+  message: string
+}
+
 interface CodeEditorProps {
   question: Question
   codingQuestion?: CodingQuestion
@@ -24,6 +30,7 @@ interface CodeEditorProps {
   onLanguageChange: (language: string) => void
   onSubmit: () => Promise<void>
   onAutoSave?: () => void
+  validationFeedback?: CodeValidationFeedback | null
 }
 
 export function CodeEditor({
@@ -36,6 +43,7 @@ export function CodeEditor({
   onLanguageChange,
   onSubmit,
   onAutoSave,
+  validationFeedback,
 }: CodeEditorProps) {
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -157,9 +165,9 @@ export function CodeEditor({
             <div className="flex-1">
               <CardTitle className="text-white text-lg mb-2 flex items-center gap-2">
                 <Code2 className="w-5 h-5 text-purple-400" />
-                {question.question_text}
+                {codingQuestion.title || question.question_text}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Badge className="bg-purple-900 text-purple-200">
                   {languageMap[selectedLanguage] || selectedLanguage || 'Code'}
                 </Badge>
@@ -168,6 +176,12 @@ export function CodeEditor({
                 </Badge>
                 <Badge className="bg-blue-900 text-blue-200">
                   {question.points} point{question.points !== 1 ? 's' : ''}
+                </Badge>
+                <Badge className="bg-cyan-900 text-cyan-200">
+                  {codingQuestion.time_limit || 2}s limit
+                </Badge>
+                <Badge className="bg-slate-700 text-slate-200">
+                  {codingQuestion.memory_limit || 256} MB
                 </Badge>
               </div>
             </div>
@@ -178,27 +192,27 @@ export function CodeEditor({
           {(codingQuestion.description || codingQuestion.constraints || codingQuestion.input_format || codingQuestion.output_format) && (
             <div className="grid gap-4">
               {codingQuestion.description && (
-                <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                <div className="select-none rounded-lg border border-slate-700 bg-slate-900/70 p-4">
                   <h3 className="mb-2 text-sm font-semibold text-slate-100">Problem Description</h3>
                   <p className="text-sm leading-6 text-slate-300 whitespace-pre-wrap">{codingQuestion.description}</p>
                 </div>
               )}
               <div className="grid gap-4 md:grid-cols-2">
                 {codingQuestion.input_format && (
-                  <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                  <div className="select-none rounded-lg border border-slate-700 bg-slate-900/70 p-4">
                     <h3 className="mb-2 text-sm font-semibold text-slate-100">Input Format</h3>
                     <p className="text-sm leading-6 text-slate-300 whitespace-pre-wrap">{codingQuestion.input_format}</p>
                   </div>
                 )}
                 {codingQuestion.output_format && (
-                  <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                  <div className="select-none rounded-lg border border-slate-700 bg-slate-900/70 p-4">
                     <h3 className="mb-2 text-sm font-semibold text-slate-100">Output Format</h3>
                     <p className="text-sm leading-6 text-slate-300 whitespace-pre-wrap">{codingQuestion.output_format}</p>
                   </div>
                 )}
               </div>
               {codingQuestion.constraints && (
-                <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                <div className="select-none rounded-lg border border-slate-700 bg-slate-900/70 p-4">
                   <h3 className="mb-2 text-sm font-semibold text-slate-100">Constraints</h3>
                   <p className="font-mono text-sm leading-6 text-slate-300 whitespace-pre-wrap">{codingQuestion.constraints}</p>
                 </div>
@@ -207,11 +221,18 @@ export function CodeEditor({
           )}
 
           {visibleTestCases.length > 0 && (
-            <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+            <div className="select-none rounded-lg border border-slate-700 bg-slate-900/70 p-4">
               <h3 className="mb-3 text-sm font-semibold text-slate-100">Sample Test Cases</h3>
               <div className="grid gap-3 md:grid-cols-2">
                 {visibleTestCases.map((testCase, index) => (
-                  <div key={testCase.id} className="rounded-lg border border-slate-700 bg-slate-950/80 p-3">
+                  <div
+                    key={testCase.id}
+                    className="rounded-lg border border-slate-700 bg-slate-950/80 p-3 opacity-0 transition-transform duration-300 hover:-translate-y-1 hover:border-cyan-500/40"
+                    style={{
+                      animation: 'sampleCardIn 420ms ease-out forwards',
+                      animationDelay: `${index * 90}ms`,
+                    }}
+                  >
                     <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
                       Sample {index + 1}
                     </div>
@@ -272,7 +293,7 @@ export function CodeEditor({
               onChange={(e) => onCodeChange(e.target.value)}
               placeholder={`Write your ${languageMap[selectedLanguage] || selectedLanguage || 'code'} here...`}
               spellCheck={false}
-              className="w-full h-72 rounded-lg border border-slate-600 bg-slate-950 p-4 font-mono text-base leading-7 text-slate-100 caret-cyan-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full h-72 select-text rounded-lg border border-slate-600 bg-slate-950 p-4 font-mono text-base leading-7 text-slate-100 caret-cyan-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <div className="mt-2 text-xs text-slate-400">
               Code auto-saves every 5 seconds. {liveRun ? 'Execution updates automatically while you type.' : 'Use Run Code to execute with the sample input below.'}
@@ -289,7 +310,7 @@ export function CodeEditor({
               onChange={(e) => setStdinInput(e.target.value)}
               placeholder="Provide sample stdin here..."
               spellCheck={false}
-              className="w-full min-h-28 rounded-lg border border-slate-600 bg-slate-950 p-3 font-mono text-sm leading-6 text-slate-100 caret-cyan-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full min-h-28 select-text rounded-lg border border-slate-600 bg-slate-950 p-3 font-mono text-sm leading-6 text-slate-100 caret-cyan-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -326,6 +347,21 @@ export function CodeEditor({
             </Button>
           </div>
 
+          {validationFeedback && (
+            <div
+              className={`rounded-lg border px-4 py-3 ${
+                validationFeedback.status === 'success'
+                  ? 'border-emerald-500/40 bg-emerald-950/40'
+                  : validationFeedback.status === 'warning'
+                    ? 'border-amber-500/40 bg-amber-950/35'
+                    : 'border-red-500/40 bg-red-950/35'
+              }`}
+            >
+              <div className="text-sm font-semibold text-white">{validationFeedback.title}</div>
+              <p className="mt-1 text-sm text-slate-200">{validationFeedback.message}</p>
+            </div>
+          )}
+
           {runResult && (
             <div className="mt-4 p-4 rounded bg-slate-950 border border-slate-700">
               <h4 className="text-sm font-semibold text-slate-200 mb-2">Execution Result</h4>
@@ -344,48 +380,27 @@ export function CodeEditor({
         </CardContent>
       </Card>
 
-      {testCases.length > 0 && (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-base">Visible Test Cases</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {visibleTestCases
-                .map((testCase, index) => (
-                  <div key={testCase.id} className="p-3 bg-slate-900 rounded border border-slate-600">
-                    <div className="text-sm font-semibold text-blue-300 mb-2">
-                      Test Case {index + 1}
-                    </div>
-                    <div className="space-y-2 text-xs text-slate-300 font-mono">
-                      <div>
-                        <span className="text-slate-400">Input:</span>
-                        <div className="mt-1 p-2 bg-slate-800 rounded whitespace-pre-wrap break-words">
-                          {testCase.input || testCase.input_data}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-slate-400">Expected Output:</span>
-                        <div className="mt-1 p-2 bg-slate-800 rounded whitespace-pre-wrap break-words">
-                          {testCase.expected_output}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting}
         className="w-full bg-green-600 hover:bg-green-700 text-white disabled:bg-green-800 disabled:text-green-200"
       >
         <Play className="w-4 h-4 mr-2" />
-        {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+        {isSubmitting ? 'Checking...' : 'Check Solution'}
       </Button>
+
+      <style jsx>{`
+        @keyframes sampleCardIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }

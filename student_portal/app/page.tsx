@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Shield, Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { SpecCrtBrand } from "@/components/spec-crt-brand"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -44,19 +45,13 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <div className="flex w-full max-w-sm flex-col items-center gap-8">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary">
-              <Shield className="size-5 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">SPEC CRT</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">Faculty Control Panel for Secure CRT Testing</p>
-        </div>
+    <div className="flex min-h-svh items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,138,18,0.16),_transparent_18%),linear-gradient(180deg,_#fffaf6_0%,_#fff 35%,_#f7f1ec_100%)] px-4 py-8">
+      <div className="flex w-full max-w-xl flex-col items-center gap-8">
+        <SpecCrtBrand
+          subtitle="Faculty Control Panel for SPEC CRT at St. Peter's Engineering College"
+        />
 
-        <Card className="w-full border-border bg-card">
+        <Card className="w-full max-w-sm border-border bg-card/95 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
           <CardHeader className="text-center">
             <CardTitle className="text-lg text-card-foreground">Admin Login</CardTitle>
             <CardDescription>Sign in to manage exams and students</CardDescription>
@@ -103,7 +98,7 @@ export default function AdminLoginPage() {
                 <p className="text-sm text-destructive">{error}</p>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-[#7D1D2D] text-white hover:bg-[#671827]" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
