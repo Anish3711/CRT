@@ -285,7 +285,7 @@ export default function ExamCodingPage({
                     <TableHeader><TableRow className="border-border hover:bg-transparent"><TableHead className="text-muted-foreground">Input</TableHead><TableHead className="text-muted-foreground">Expected</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {viewProblem.testCases.filter((tc: TestCase) => !tc.isHidden).map((tc: TestCase) => (
-                        <TableRow key={tc.id} className="border-border"><TableCell className="font-mono text-sm text-card-foreground">{tc.input}</TableCell><TableCell className="font-mono text-sm text-card-foreground">{tc.expectedOutput}</TableCell></TableRow>
+                        <TableRow key={tc.id} className="border-border"><TableCell className="whitespace-pre-wrap break-words font-mono text-sm text-card-foreground">{tc.input}</TableCell><TableCell className="whitespace-pre-wrap break-words font-mono text-sm text-card-foreground">{tc.expectedOutput}</TableCell></TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -296,7 +296,7 @@ export default function ExamCodingPage({
                     <TableHeader><TableRow className="border-border hover:bg-transparent"><TableHead className="text-muted-foreground">Input</TableHead><TableHead className="text-muted-foreground">Expected</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {viewProblem.testCases.filter((tc: TestCase) => tc.isHidden).map((tc: TestCase) => (
-                        <TableRow key={tc.id} className="border-border"><TableCell className="font-mono text-sm text-chart-5">{tc.input}</TableCell><TableCell className="font-mono text-sm text-chart-5">{tc.expectedOutput}</TableCell></TableRow>
+                        <TableRow key={tc.id} className="border-border"><TableCell className="whitespace-pre-wrap break-words font-mono text-sm text-chart-5">{tc.input}</TableCell><TableCell className="whitespace-pre-wrap break-words font-mono text-sm text-chart-5">{tc.expectedOutput}</TableCell></TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -334,8 +334,24 @@ export default function ExamCodingPage({
             </div>
             <div className="flex flex-col gap-2"><Label className="text-foreground">Constraints</Label><Input value={constraints} onChange={(e) => setConstraints(e.target.value)} className="bg-secondary text-foreground" /></div>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-2"><Label className="text-foreground">Sample Input</Label><Input value={sampleIn} onChange={(e) => setSampleIn(e.target.value)} className="bg-secondary font-mono text-foreground" /></div>
-              <div className="flex flex-col gap-2"><Label className="text-foreground">Sample Output</Label><Input value={sampleOut} onChange={(e) => setSampleOut(e.target.value)} className="bg-secondary font-mono text-foreground" /></div>
+              <div className="flex flex-col gap-2">
+                <Label className="text-foreground">Sample Input</Label>
+                <Textarea
+                  value={sampleIn}
+                  onChange={(e) => setSampleIn(e.target.value)}
+                  className="min-h-28 bg-secondary font-mono text-foreground"
+                  rows={5}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label className="text-foreground">Sample Output</Label>
+                <Textarea
+                  value={sampleOut}
+                  onChange={(e) => setSampleOut(e.target.value)}
+                  className="min-h-28 bg-secondary font-mono text-foreground"
+                  rows={5}
+                />
+              </div>
             </div>
             <Separator />
             <div className="flex flex-col gap-2">
@@ -370,10 +386,25 @@ export default function ExamCodingPage({
                 <h3 className="text-sm font-medium text-foreground">Sample Test Cases</h3>
                 <Button variant="outline" size="sm" onClick={() => addTestCase(false)}><Plus className="mr-1 size-3" /> Add</Button>
               </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Use multi-line input and output for DSA problems with arrays, graphs, trees, or multiple test lines.
+              </p>
               {testCases.filter((tc) => !tc.isHidden).map((tc) => (
-                <div key={tc.id} className="mb-2 flex items-center gap-2">
-                  <Input placeholder="Input" value={tc.input} onChange={(e) => updateTestCase(tc.id, "input", e.target.value)} className="bg-secondary font-mono text-foreground" />
-                  <Input placeholder="Expected" value={tc.expectedOutput} onChange={(e) => updateTestCase(tc.id, "expectedOutput", e.target.value)} className="bg-secondary font-mono text-foreground" />
+                <div key={tc.id} className="mb-3 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-start">
+                  <Textarea
+                    placeholder="Input"
+                    value={tc.input}
+                    onChange={(e) => updateTestCase(tc.id, "input", e.target.value)}
+                    className="min-h-28 bg-secondary font-mono text-foreground"
+                    rows={5}
+                  />
+                  <Textarea
+                    placeholder="Expected"
+                    value={tc.expectedOutput}
+                    onChange={(e) => updateTestCase(tc.id, "expectedOutput", e.target.value)}
+                    className="min-h-28 bg-secondary font-mono text-foreground"
+                    rows={5}
+                  />
                   <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeTestCase(tc.id)}><Trash2 className="size-3.5" /></Button>
                 </div>
               ))}
@@ -384,9 +415,21 @@ export default function ExamCodingPage({
                 <Button variant="outline" size="sm" onClick={() => addTestCase(true)}><Plus className="mr-1 size-3" /> Add</Button>
               </div>
               {testCases.filter((tc) => tc.isHidden).map((tc) => (
-                <div key={tc.id} className="mb-2 flex items-center gap-2">
-                  <Input placeholder="Input" value={tc.input} onChange={(e) => updateTestCase(tc.id, "input", e.target.value)} className="bg-secondary font-mono text-foreground" />
-                  <Input placeholder="Expected" value={tc.expectedOutput} onChange={(e) => updateTestCase(tc.id, "expectedOutput", e.target.value)} className="bg-secondary font-mono text-foreground" />
+                <div key={tc.id} className="mb-3 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-start">
+                  <Textarea
+                    placeholder="Input"
+                    value={tc.input}
+                    onChange={(e) => updateTestCase(tc.id, "input", e.target.value)}
+                    className="min-h-28 bg-secondary font-mono text-foreground"
+                    rows={5}
+                  />
+                  <Textarea
+                    placeholder="Expected"
+                    value={tc.expectedOutput}
+                    onChange={(e) => updateTestCase(tc.id, "expectedOutput", e.target.value)}
+                    className="min-h-28 bg-secondary font-mono text-foreground"
+                    rows={5}
+                  />
                   <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeTestCase(tc.id)}><Trash2 className="size-3.5" /></Button>
                 </div>
               ))}

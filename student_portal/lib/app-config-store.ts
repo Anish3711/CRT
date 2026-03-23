@@ -62,7 +62,7 @@ export const defaultSecuritySettings: SecuritySettings = {
   enableWebcamMonitoring: false,
   randomizeQuestions: true,
   randomizeTestCases: false,
-  maxTabSwitches: 3,
+  maxTabSwitches: 2,
   warningMessage: 'Warning: Suspicious activity detected. Further violations will terminate your exam.',
 }
 

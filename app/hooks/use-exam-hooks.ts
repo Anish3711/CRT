@@ -2,6 +2,23 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ActivityLog } from '@/lib/supabase'
 
+export type SuspiciousActivity = {
+  id: string
+  activity_type: ActivityLog['activity_type'] | string
+  severity: ActivityLog['severity']
+  description: string | null
+  timestamp: string
+}
+
+type MonitoringEvent = {
+  type: SuspiciousActivity['activity_type']
+  severity: SuspiciousActivity['severity']
+  description: string
+  timestamp: string
+}
+
+const CLIENT_ACTIVITY_DEDUP_WINDOW_MS = 1500
+
 // Hook for fullscreen enforcement
 export function useFullscreenEnforcement(enabled: boolean = true) {
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -51,32 +68,78 @@ export function useFullscreenEnforcement(enabled: boolean = true) {
 }
 
 // Hook for detecting tab switches and suspicious activity
-export function useActivityDetection(sessionId: string | null, enabled: boolean = true) {
-  const [suspiciousActivities, setSuspiciousActivities] = useState<ActivityLog[]>([])
-  const loggingBufferRef = useRef<Partial<ActivityLog>[]>([])
+export function useActivityDetection(
+  sessionId: string | null,
+  enabled: boolean = true,
+  initialActivities: SuspiciousActivity[] = []
+) {
+  const [suspiciousActivities, setSuspiciousActivities] = useState<SuspiciousActivity[]>(initialActivities)
+  const loggingBufferRef = useRef<MonitoringEvent[]>([])
+  const lastActivityAtRef = useRef<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!sessionId) {
+      setSuspiciousActivities([])
+      loggingBufferRef.current = []
+      lastActivityAtRef.current = {}
+      return
+    }
+
+    setSuspiciousActivities(initialActivities)
+    loggingBufferRef.current = []
+    lastActivityAtRef.current = {}
+
+    for (const activity of initialActivities) {
+      const parsedTimestamp = Date.parse(activity.timestamp)
+      if (!Number.isNaN(parsedTimestamp)) {
+        lastActivityAtRef.current[activity.activity_type] = parsedTimestamp
+      }
+    }
+  }, [initialActivities, sessionId])
+
+  const recordActivity = useCallback((event: MonitoringEvent) => {
+    const eventTimestamp = Date.parse(event.timestamp)
+    const now = Number.isNaN(eventTimestamp) ? Date.now() : eventTimestamp
+    const lastLoggedAt = lastActivityAtRef.current[event.type]
+
+    if (typeof lastLoggedAt === 'number' && now - lastLoggedAt <= CLIENT_ACTIVITY_DEDUP_WINDOW_MS) {
+      return
+    }
+
+    lastActivityAtRef.current[event.type] = now
+    loggingBufferRef.current.push(event)
+
+    setSuspiciousActivities((prev) => [
+      ...prev,
+      {
+        id: `${event.type}-${now}`,
+        activity_type: event.type,
+        severity: event.severity,
+        description: event.description,
+        timestamp: event.timestamp,
+      },
+    ])
+  }, [])
 
   useEffect(() => {
     if (!enabled || !sessionId) return
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        loggingBufferRef.current.push({
-          exam_session_id: sessionId,
-          activity_type: 'tab_switch',
+        recordActivity({
+          type: 'tab_switch',
           severity: 'high',
           description: 'Tab switched away from exam',
           timestamp: new Date().toISOString(),
         })
-        setSuspiciousActivities((prev) => [...prev, { id: '', ...loggingBufferRef.current[loggingBufferRef.current.length - 1] } as ActivityLog])
       }
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Detect copy/paste attempts
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        loggingBufferRef.current.push({
-          exam_session_id: sessionId,
-          activity_type: 'copy_attempt',
+        recordActivity({
+          type: 'copy_attempt',
           severity: 'medium',
           description: 'Copy attempt detected',
           timestamp: new Date().toISOString(),
@@ -84,9 +147,8 @@ export function useActivityDetection(sessionId: string | null, enabled: boolean 
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        loggingBufferRef.current.push({
-          exam_session_id: sessionId,
-          activity_type: 'paste_attempt',
+        recordActivity({
+          type: 'paste_attempt',
           severity: 'medium',
           description: 'Paste attempt detected',
           timestamp: new Date().toISOString(),
@@ -101,9 +163,8 @@ export function useActivityDetection(sessionId: string | null, enabled: boolean 
 
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault()
-      loggingBufferRef.current.push({
-        exam_session_id: sessionId,
-        activity_type: 'copy_attempt',
+      recordActivity({
+        type: 'copy_attempt',
         severity: 'medium',
         description: 'Right-click attempt blocked',
         timestamp: new Date().toISOString(),
@@ -119,28 +180,36 @@ export function useActivityDetection(sessionId: string | null, enabled: boolean 
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('contextmenu', handleContextMenu)
     }
-  }, [enabled, sessionId])
+  }, [enabled, recordActivity, sessionId])
 
   const flushLogs = useCallback(
-    async (additionalLogs?: Partial<ActivityLog>[]) => {
+    async (additionalLogs?: MonitoringEvent[]) => {
       if (!sessionId) return
 
       const allLogs = [...loggingBufferRef.current, ...(additionalLogs || [])]
       if (allLogs.length === 0) return
 
       try {
-        const supabase = createClient()
-        const activityLogRows = allLogs.map((log) => ({
-          exam_session_id: sessionId,
-          activity_type: log.activity_type || 'other',
-          severity: log.severity || 'low',
-          description: log.description || null,
-          timestamp: log.timestamp || new Date().toISOString(),
-        }))
+        const response = await fetch('/api/monitoring', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            attemptId: sessionId,
+            events: allLogs.map((log) => ({
+              type: log.type,
+              description: log.description,
+              severity: log.severity,
+              timestamp: log.timestamp,
+            })),
+          }),
+        })
 
-        await supabase.from('activity_logs').insert(
-          activityLogRows as never
-        )
+        if (!response.ok) {
+          throw new Error('Failed to persist monitoring logs')
+        }
+
         loggingBufferRef.current = []
       } catch (err) {
         console.error('Failed to flush activity logs:', err)

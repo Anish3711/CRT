@@ -58,20 +58,6 @@ export function CodeEditor({
     }
   }, [code, onAutoSave])
 
-  // Show error state if coding question failed to load
-  if (!codingQuestion) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="pt-6">
-          <div className="text-red-400 text-center py-8">
-            <p className="font-semibold mb-2">Error loading coding question</p>
-            <p className="text-sm text-slate-400">Unable to load question details. Please refresh the page.</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   const handleCopyTemplate = () => {
     if (codingQuestion?.starter_code) {
       onCodeChange(codingQuestion.starter_code)
@@ -86,9 +72,11 @@ export function CodeEditor({
     cpp: 'C++',
     javascript: 'JavaScript',
   }
-  const allowedLanguages = codingQuestion.allowed_languages?.length
+  const allowedLanguages = codingQuestion?.allowed_languages?.length
     ? codingQuestion.allowed_languages
-    : [codingQuestion.language]
+    : codingQuestion
+      ? [codingQuestion.language]
+      : []
   const visibleTestCases = testCases.filter((tc) => tc.is_visible)
 
   useEffect(() => {
@@ -146,6 +134,19 @@ export function CodeEditor({
     easy: 'bg-green-900 text-green-200',
     medium: 'bg-yellow-900 text-yellow-200',
     hard: 'bg-red-900 text-red-200',
+  }
+
+  if (!codingQuestion) {
+    return (
+      <Card className="bg-slate-800 border-slate-700">
+        <CardContent className="pt-6">
+          <div className="text-red-400 text-center py-8">
+            <p className="font-semibold mb-2">Error loading coding question</p>
+            <p className="text-sm text-slate-400">Unable to load question details. Please refresh the page.</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

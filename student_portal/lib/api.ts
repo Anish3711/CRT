@@ -199,6 +199,35 @@ function normalizeAllowedLanguages(allowedLanguages?: string[] | null, fallback 
   return normalized.length > 0 ? Array.from(new Set(normalized)) : [fallback]
 }
 
+function validateCodingProblemInput(
+  data: Pick<CodingProblem, 'title' | 'description' | 'timeLimit' | 'memoryLimit' | 'testCases'>
+) {
+  if (!data.title?.trim() && !data.description?.trim()) {
+    throw new Error('Coding problem title is required.')
+  }
+
+  if (!Number.isFinite(data.timeLimit) || data.timeLimit <= 0) {
+    throw new Error('Time limit must be a positive number.')
+  }
+
+  if (!Number.isFinite(data.memoryLimit) || data.memoryLimit <= 0) {
+    throw new Error('Memory limit must be a positive number.')
+  }
+
+  if (!Array.isArray(data.testCases) || data.testCases.length === 0) {
+    throw new Error('Add at least one test case before saving the coding problem.')
+  }
+
+  for (const [index, testCase] of data.testCases.entries()) {
+    const hasInput = testCase.input.trim().length > 0
+    const hasExpectedOutput = testCase.expectedOutput.trim().length > 0
+
+    if (!hasInput && !hasExpectedOutput) {
+      throw new Error(`Test case ${index + 1} cannot have both input and expected output empty.`)
+    }
+  }
+}
+
 function isMissingColumnError(error: unknown, columnName: string) {
   const message = error && typeof error === 'object' && 'message' in error
     ? String(error.message)
@@ -743,6 +772,7 @@ export const codingApi = {
   },
 
   create: async (examId: string, data: Omit<CodingProblem, "id" | "createdAt" | "examId">): Promise<CodingProblem> => {
+    validateCodingProblemInput(data)
     const { data: qList } = await supabase.from('questions').select('order_index').eq('exam_id', examId)
     const orderIndex = qList ? qList.length + 1 : 1
     const allowedLanguages = normalizeAllowedLanguages(data.allowedLanguages)
@@ -788,6 +818,16 @@ export const codingApi = {
   },
 
   update: async (examId: string, pId: string, data: Partial<CodingProblem>): Promise<CodingProblem> => {
+    if (data.title || data.description || data.timeLimit || data.memoryLimit || data.testCases) {
+      validateCodingProblemInput({
+        title: data.title || '',
+        description: data.description || '',
+        timeLimit: data.timeLimit || 2,
+        memoryLimit: data.memoryLimit || 256,
+        testCases: data.testCases || [],
+      })
+    }
+
     const allowedLanguages = normalizeAllowedLanguages(data.allowedLanguages)
     const selectedLanguage = allowedLanguages[0]
 

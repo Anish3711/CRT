@@ -51,6 +51,7 @@ function isMissingColumnMessage(message: string, columnName: string) {
 export async function GET(req: NextRequest) {
   try {
     const examId = req.nextUrl.searchParams.get('examId')
+    const attemptId = req.nextUrl.searchParams.get('attemptId')
     if (!examId) {
       return NextResponse.json({ error: 'examId is required' }, { status: 400 })
     }
@@ -222,6 +223,31 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    let attemptState: {
+      answers: Record<string, string>
+      violations: unknown[]
+      status: string
+    } | null = null
+
+    if (attemptId) {
+      const { data: attempt, error: attemptError } = await supabase
+        .from('guest_attempts')
+        .select('answers, violations, status')
+        .eq('id', attemptId)
+        .eq('exam_id', examId)
+        .maybeSingle()
+
+      if (attemptError) {
+        console.error('Error fetching guest attempt state:', attemptError)
+      } else if (attempt) {
+        attemptState = {
+          answers: attempt.answers && typeof attempt.answers === 'object' ? attempt.answers as Record<string, string> : {},
+          violations: Array.isArray(attempt.violations) ? attempt.violations : [],
+          status: attempt.status || 'ongoing',
+        }
+      }
+    }
+
     return NextResponse.json({
       exam: {
         id: exam.id,
@@ -241,6 +267,7 @@ export async function GET(req: NextRequest) {
       mcqOptions,
       codingQuestions,
       testCases,
+      attemptState,
     })
   } catch (err) {
     console.error('exam-questions error:', err)

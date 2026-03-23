@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getSecuritySettings, saveSecuritySettings } from '@/lib/app-config-store'
+import { getExamMetadata, getSecuritySettings, saveSecuritySettings } from '@/lib/app-config-store'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const data = await getSecuritySettings()
-    return NextResponse.json(data)
+    const url = new URL(req.url)
+    const examId = url.searchParams.get('examId')
+    const [globalSettings, examMetadata] = await Promise.all([
+      getSecuritySettings(),
+      examId ? getExamMetadata(examId) : Promise.resolve(null),
+    ])
+
+    if (!examMetadata) {
+      return NextResponse.json(globalSettings)
+    }
+
+    return NextResponse.json({
+      ...globalSettings,
+      ...examMetadata.security,
+      maxTabSwitches: globalSettings.maxTabSwitches,
+      warningMessage: globalSettings.warningMessage,
+    })
   } catch (error) {
     console.error('Failed to load security settings:', error)
     return NextResponse.json(null, { status: 500 })

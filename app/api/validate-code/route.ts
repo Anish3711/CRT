@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { executeCodeLocally } from '@/lib/local-code-execution'
 import { normalizeStdin } from '@/lib/code-input-normalizer'
+import { normalizeJudgeOutput } from '@/lib/code-output-normalizer'
 
 // Piston API language mapping
 const LANGUAGE_MAP: Record<string, { language: string, version: string }> = {
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
           resolvedLanguage,
           String(testCase.input_data || testCase.input || '').trim()
         )
-        const expectedOutput = String(testCase.expected_output || '').trim()
+        const expectedOutput = String(testCase.expected_output || '')
         let actualOutput = ''
         let runtimeError: string | null = null
         let exitCode = 0
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
             language: resolvedLanguage,
             stdin,
           })
-          actualOutput = (localResult.stdout || '').trim()
+          actualOutput = localResult.stdout || ''
           runtimeError = localResult.stderr || null
           exitCode = localResult.exitCode
         } catch (localError) {
@@ -165,19 +166,21 @@ export async function POST(req: NextRequest) {
             continue
           }
 
-          actualOutput = (data.run.stdout || '').trim()
+          actualOutput = data.run.stdout || ''
           runtimeError = data.run.stderr || null
           exitCode = data.run.code || 0
         }
 
         const hasRuntimeError = Boolean(runtimeError && runtimeError.trim())
-        const passed = !hasRuntimeError && exitCode === 0 && actualOutput === expectedOutput
+        const normalizedActualOutput = normalizeJudgeOutput(actualOutput)
+        const normalizedExpectedOutput = normalizeJudgeOutput(expectedOutput)
+        const passed = !hasRuntimeError && exitCode === 0 && normalizedActualOutput === normalizedExpectedOutput
 
         results.push({
           testCaseId: testCase.id || testCase.input_data,
           passed,
-          actual: actualOutput,
-          expected: expectedOutput,
+          actual: normalizedActualOutput,
+          expected: normalizedExpectedOutput,
           error: runtimeError,
           exitCode,
         })

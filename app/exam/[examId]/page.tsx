@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { useActivityDetection, useFullscreenEnforcement } from '@/app/hooks/use-exam-hooks'
+import { useActivityDetection, useFullscreenEnforcement, type SuspiciousActivity } from '@/app/hooks/use-exam-hooks'
 
 type SecuritySettings = {
   forceFullscreen: boolean
@@ -46,8 +46,45 @@ const defaultSecuritySettings: SecuritySettings = {
   enableWebcamMonitoring: false,
   randomizeQuestions: true,
   randomizeTestCases: false,
-  maxTabSwitches: 3,
+  maxTabSwitches: 2,
   warningMessage: 'Warning: Suspicious activity detected. Further violations will terminate your exam.',
+}
+
+function getAttemptStorageKey(attemptId: string, key: string) {
+  return `exam:${attemptId}:${key}`
+}
+
+function readJsonFromStorage<T>(key: string, fallback: T) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return fallback
+    return JSON.parse(raw) as T
+  } catch {
+    return fallback
+  }
+}
+
+function isAnswerMap(value: unknown): value is Record<string, string> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value))
+}
+
+function mapStoredViolation(value: unknown): SuspiciousActivity | null {
+  if (!value || typeof value !== 'object') return null
+
+  const violation = value as Record<string, unknown>
+  const type = typeof violation.type === 'string' ? violation.type : 'other'
+  const timestamp = typeof violation.timestamp === 'string' ? violation.timestamp : new Date().toISOString()
+  const severity = violation.severity === 'low' || violation.severity === 'medium' || violation.severity === 'high'
+    ? violation.severity
+    : 'medium'
+
+  return {
+    id: typeof violation.id === 'string' ? violation.id : `${type}-${timestamp}`,
+    activity_type: type,
+    severity,
+    description: typeof violation.description === 'string' ? violation.description : null,
+    timestamp,
+  }
 }
 
 export default function ExamPage() {
@@ -67,13 +104,15 @@ export default function ExamPage() {
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({})
   const [selectedLanguages, setSelectedLanguages] = useState<Record<string, string>>({})
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set())
+  const [initialSuspiciousActivities, setInitialSuspiciousActivities] = useState<SuspiciousActivity[]>([])
+  const [isAttemptStateHydrated, setIsAttemptStateHydrated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
 
   const { containerRef, isFullscreen, requestFullscreen, exitFullscreen } = useFullscreenEnforcement(true)
-  const { flushLogs, suspiciousActivities } = useActivityDetection(attemptId, true)
+  const { flushLogs, suspiciousActivities } = useActivityDetection(attemptId, true, initialSuspiciousActivities)
 
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const autoSubmittedRef = useRef(false)
@@ -93,7 +132,7 @@ export default function ExamPage() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const res = await fetch('/api/settings/security')
+        const res = await fetch(`/api/settings/security?examId=${examId}`)
         if (!res.ok) return
         const data = await res.json()
         if (data) {
@@ -105,18 +144,20 @@ export default function ExamPage() {
     }
 
     loadSettings()
-  }, [])
+  }, [examId])
 
   useEffect(() => {
     if (!attemptId) return
 
     const initializeExam = async () => {
       try {
-        const res = await fetch(`/api/exam-questions?examId=${examId}`)
+        setIsAttemptStateHydrated(false)
+        const res = await fetch(`/api/exam-questions?examId=${examId}&attemptId=${attemptId}`)
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to load exam')
 
-        setQuestions(data.questions || [])
+        const questionList = data.questions || []
+        setQuestions(questionList)
         setExamInfo(data.exam || null)
         if (data.exam) {
           setCurrentExam(data.exam)
@@ -133,10 +174,15 @@ export default function ExamPage() {
           codingMap[questionId] = codingQuestion as CodingQuestion
         }
         setCodingQuestionsMap(codingMap)
+        const restoredLanguages = readJsonFromStorage<Record<string, string>>(
+          getAttemptStorageKey(attemptId, 'languages'),
+          {}
+        )
+
         setSelectedLanguages((prev) => {
-          const next = { ...prev }
+          const next = { ...prev, ...restoredLanguages }
           for (const [questionId, codingQuestion] of Object.entries(codingMap)) {
-            next[questionId] = prev[questionId] || codingQuestion.language
+            next[questionId] = next[questionId] || codingQuestion.language
           }
           return next
         })
@@ -147,10 +193,43 @@ export default function ExamPage() {
         }
         setTestCasesMap(casesMap)
 
-        setLoading(false)
-        if (securitySettings.forceFullscreen) {
-          requestFullscreen()
+        const serverAnswers = isAnswerMap(data.attemptState?.answers)
+          ? data.attemptState.answers
+          : {}
+        const localAnswers = readJsonFromStorage<Record<string, string>>(
+          getAttemptStorageKey(attemptId, 'answers'),
+          {}
+        )
+        const restoredAnswers = {
+          ...serverAnswers,
+          ...localAnswers,
         }
+
+        setStudentAnswers(restoredAnswers)
+        setAnsweredQuestions(
+          new Set(
+            Object.entries(restoredAnswers)
+              .filter(([, answer]) => typeof answer === 'string' && answer.trim().length > 0)
+              .map(([questionId]) => questionId)
+          )
+        )
+
+        const restoredViolations = Array.isArray(data.attemptState?.violations)
+          ? data.attemptState.violations
+              .map((violation: unknown) => mapStoredViolation(violation))
+              .filter((violation: SuspiciousActivity | null): violation is SuspiciousActivity => Boolean(violation))
+          : []
+        setInitialSuspiciousActivities(restoredViolations)
+
+        const storedQuestionIndex = Number(localStorage.getItem(getAttemptStorageKey(attemptId, 'questionIndex')))
+        if (Number.isInteger(storedQuestionIndex) && storedQuestionIndex >= 0) {
+          setCurrentQuestionIndex(Math.min(storedQuestionIndex, Math.max(questionList.length - 1, 0)))
+        } else {
+          setCurrentQuestionIndex(0)
+        }
+
+        setIsAttemptStateHydrated(true)
+        setLoading(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to initialize exam')
         setLoading(false)
@@ -158,7 +237,28 @@ export default function ExamPage() {
     }
 
     initializeExam()
-  }, [attemptId, examId, requestFullscreen, securitySettings.forceFullscreen, setCurrentExam])
+  }, [attemptId, examId, setCurrentExam])
+
+  useEffect(() => {
+    if (!attemptId || loading || !securitySettings.forceFullscreen) return
+
+    requestFullscreen()
+  }, [attemptId, loading, requestFullscreen, securitySettings.forceFullscreen])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated) return
+    localStorage.setItem(getAttemptStorageKey(attemptId, 'answers'), JSON.stringify(studentAnswers))
+  }, [attemptId, isAttemptStateHydrated, studentAnswers])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated) return
+    localStorage.setItem(getAttemptStorageKey(attemptId, 'languages'), JSON.stringify(selectedLanguages))
+  }, [attemptId, isAttemptStateHydrated, selectedLanguages])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated) return
+    localStorage.setItem(getAttemptStorageKey(attemptId, 'questionIndex'), String(currentQuestionIndex))
+  }, [attemptId, currentQuestionIndex, isAttemptStateHydrated])
 
   const persistAnswers = useCallback(async () => {
     if (!attemptId) return
@@ -197,7 +297,15 @@ export default function ExamPage() {
 
   const saveAnswerLocally = (questionId: string, value: string) => {
     setStudentAnswers((prev) => ({ ...prev, [questionId]: value }))
-    setAnsweredQuestions((prev) => new Set([...prev, questionId]))
+    setAnsweredQuestions((prev) => {
+      const next = new Set(prev)
+      if (value.trim()) {
+        next.add(questionId)
+      } else {
+        next.delete(questionId)
+      }
+      return next
+    })
   }
 
   const handleOptionSelect = (optionId: string) => {
@@ -258,11 +366,16 @@ export default function ExamPage() {
     setCurrentQuestionIndex(index)
   }
 
-  const clearAttemptStorage = () => {
+  const clearAttemptStorage = useCallback(() => {
+    if (attemptId) {
+      localStorage.removeItem(getAttemptStorageKey(attemptId, 'answers'))
+      localStorage.removeItem(getAttemptStorageKey(attemptId, 'languages'))
+      localStorage.removeItem(getAttemptStorageKey(attemptId, 'questionIndex'))
+    }
     localStorage.removeItem('attemptId')
     localStorage.removeItem('studentName')
     localStorage.removeItem('examId')
-  }
+  }, [attemptId])
 
   const submitExam = useCallback(async (autoSubmitted: boolean) => {
     if (!attemptId) return
@@ -297,7 +410,7 @@ export default function ExamPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit exam')
     }
-  }, [attemptId, examId, flushLogs, persistAnswers, router, selectedLanguages, studentAnswers])
+  }, [attemptId, clearAttemptStorage, examId, flushLogs, persistAnswers, router, selectedLanguages, studentAnswers])
 
   const handleAutoSubmitViolation = useCallback(async () => {
     if (!attemptId) return
