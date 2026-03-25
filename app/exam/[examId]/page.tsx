@@ -122,6 +122,7 @@ export default function ExamPage() {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const [securityNotice, setSecurityNotice] = useState('')
+  const [isSubmittingExam, setIsSubmittingExam] = useState(false)
   const [codeValidationFeedback, setCodeValidationFeedback] = useState<CodeValidationFeedback | null>(null)
   const monitoringSuspendedRef = useRef(true)
 
@@ -606,8 +607,9 @@ export default function ExamPage() {
   }, [attemptId])
 
   const submitExam = useCallback(async (autoSubmitted: boolean) => {
-    if (!attemptId) return
+    if (!attemptId || isSubmittingExam) return
 
+    setIsSubmittingExam(true)
     setShowSubmitDialog(false)
 
     try {
@@ -627,10 +629,11 @@ export default function ExamPage() {
       secureSessionActivatedRef.current = false
       setSecurityNotice('')
 
-      await Promise.allSettled([
-        stopScreenRecording(),
-        stopWebcamMonitoring(),
-        exitFullscreen(),
+      // Submission should not be blocked by recorder teardown.
+      void Promise.allSettled([
+        Promise.resolve(stopScreenRecording()),
+        Promise.resolve(stopWebcamMonitoring()),
+        Promise.resolve(exitFullscreen()),
       ])
 
       clearAttemptStorage()
@@ -645,6 +648,7 @@ export default function ExamPage() {
         router.push(`/results/${attemptId}`)
       }, 1800)
     } catch (err) {
+      setIsSubmittingExam(false)
       setError(err instanceof Error ? err.message : 'Failed to submit exam')
     }
   }, [
@@ -653,6 +657,7 @@ export default function ExamPage() {
     examId,
     exitFullscreen,
     flushLogs,
+    isSubmittingExam,
     persistAnswers,
     router,
     selectedLanguages,
@@ -918,7 +923,9 @@ export default function ExamPage() {
           </AlertDialogHeader>
           <div className="flex justify-end gap-2">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => submitExam(false)}>Submit</AlertDialogAction>
+            <AlertDialogAction onClick={() => submitExam(false)} disabled={isSubmittingExam}>
+              {isSubmittingExam ? 'Submitting...' : 'Submit'}
+            </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
