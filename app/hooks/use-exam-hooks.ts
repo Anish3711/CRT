@@ -550,18 +550,11 @@ export function useMediaProctoring({
         try {
           await uploadProctoringChunk(sessionId, kind, segmentIndexRef.current, event.data)
           segmentIndexRef.current += 1
+          setError(null)
         } catch (uploadError) {
           console.error(`Failed to upload ${kind} segment:`, uploadError)
-          reportIncident({
-            kind,
-            code: 'upload_failed',
-            message: `${kind === 'screen' ? 'Screen' : 'Webcam'} recording upload failed.`,
-          })
-
-          if (mediaRecorder.state !== 'inactive') {
-            isStoppingRef.current = true
-            mediaRecorder.stop()
-          }
+          // Keep recording active even if segment upload fails transiently.
+          setError(`${kind === 'screen' ? 'Screen' : 'Webcam'} recording upload is delayed. Recording continues.`)
         }
       }
 
