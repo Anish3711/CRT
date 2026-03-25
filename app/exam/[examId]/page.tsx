@@ -494,8 +494,8 @@ export default function ExamPage() {
       return
     }
 
-    setSecurityNotice(
-      'Secure mode could not be completed. Allow fullscreen, screen sharing, and webcam access to continue the exam.'
+    setSecurityNotice((current) =>
+      current || 'Secure mode could not be completed. Allow fullscreen, screen sharing, and webcam access to continue the exam.'
     )
   }, [
     requestFullscreen,
@@ -726,7 +726,7 @@ export default function ExamPage() {
 
   const currentQuestion = questions[currentQuestionIndex]
   const suspiciousCount = suspiciousActivities.length
-  const setupMessage = securityNotice || screenRecordingError || webcamMonitoringError
+  const setupMessage = screenRecordingError || webcamMonitoringError || securityNotice
 
   if (!isSecurityReady) {
     return (

@@ -520,7 +520,8 @@ export function useMediaProctoring({
       if (kind === 'screen') {
         const selectedSurface = stream.getVideoTracks()[0]?.getSettings?.().displaySurface
 
-        if (selectedSurface && selectedSurface !== 'monitor') {
+        // Strict lock: only "Entire screen" (monitor) is accepted.
+        if (selectedSurface !== 'monitor') {
           stream.getTracks().forEach((track) => track.stop())
           reportIncident({
             kind,
