@@ -426,15 +426,36 @@ export default function ExamPage() {
     }
 
     fullscreenViolationLoggedRef.current = true
-    handleProctoringIncident(
-      'Fullscreen mode was exited during the exam. Re-enter secure mode to continue.',
-      'fullscreen_exit'
-    )
+    setSecurityNotice('Fullscreen mode was exited during the exam. Re-enter secure mode to continue.')
   }, [
     attemptId,
-    handleProctoringIncident,
     isAttemptStateHydrated,
     isFullscreen,
+    securitySettings.forceFullscreen,
+  ])
+
+  useEffect(() => {
+    if (!attemptId || !isAttemptStateHydrated || !securitySettings.forceFullscreen || !isSecurityReady) return
+
+    const handleFullscreenShortcut = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' && event.key !== 'F11') {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      setSecurityNotice('Fullscreen cannot be exited during the exam. If your browser leaves fullscreen, re-enter secure mode immediately.')
+    }
+
+    window.addEventListener('keydown', handleFullscreenShortcut, true)
+
+    return () => {
+      window.removeEventListener('keydown', handleFullscreenShortcut, true)
+    }
+  }, [
+    attemptId,
+    isAttemptStateHydrated,
+    isSecurityReady,
     securitySettings.forceFullscreen,
   ])
 

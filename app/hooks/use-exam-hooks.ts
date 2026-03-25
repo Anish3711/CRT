@@ -21,7 +21,7 @@ type ProctoringKind = 'screen' | 'webcam'
 
 type ProctoringIncident = {
   kind: ProctoringKind
-  code: 'permission_denied' | 'stream_ended' | 'unsupported' | 'upload_failed'
+  code: 'permission_denied' | 'stream_ended' | 'unsupported' | 'upload_failed' | 'invalid_surface'
   message: string
 }
 
@@ -499,9 +499,15 @@ export function useMediaProctoring({
     try {
       const stream = kind === 'screen'
         ? await navigator.mediaDevices.getDisplayMedia({
-            video: true,
+            video: {
+              displaySurface: 'monitor',
+            },
             audio: false,
-          })
+            preferCurrentTab: false,
+            selfBrowserSurface: 'exclude',
+            surfaceSwitching: 'exclude',
+            monitorTypeSurfaces: 'include',
+          } as DisplayMediaStreamOptions & Record<string, unknown>)
         : await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: 'user',
@@ -510,6 +516,21 @@ export function useMediaProctoring({
             },
             audio: false,
           })
+
+      if (kind === 'screen') {
+        const selectedSurface = stream.getVideoTracks()[0]?.getSettings?.().displaySurface
+
+        if (selectedSurface && selectedSurface !== 'monitor') {
+          stream.getTracks().forEach((track) => track.stop())
+          reportIncident({
+            kind,
+            code: 'invalid_surface',
+            message: 'Please choose Entire screen to continue the exam. Tab and window sharing are not allowed.',
+          })
+          cleanup()
+          return false
+        }
+      }
 
       streamRef.current = stream
       setPreviewStream(kind === 'webcam' ? stream : null)
