@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, type MutableRefObject } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ActivityLog } from '@/lib/supabase'
 
@@ -138,6 +138,7 @@ export function useActivityDetection(
   controls?: {
     disableCopyPaste?: boolean
     disableRightClick?: boolean
+    suspendRef?: MutableRefObject<boolean>
   }
 ) {
   const [suspiciousActivities, setSuspiciousActivities] = useState<SuspiciousActivity[]>(initialActivities)
@@ -165,6 +166,10 @@ export function useActivityDetection(
   }, [initialActivities, sessionId])
 
   const recordActivity = useCallback((event: MonitoringEvent) => {
+    if (controls?.suspendRef?.current) {
+      return false
+    }
+
     const eventTimestamp = Date.parse(event.timestamp)
     const now = Number.isNaN(eventTimestamp) ? Date.now() : eventTimestamp
     const lastLoggedAt = lastActivityAtRef.current[event.type]
@@ -188,7 +193,7 @@ export function useActivityDetection(
     ])
 
     return true
-  }, [])
+  }, [controls?.suspendRef])
 
   useEffect(() => {
     if (!enabled || !sessionId) return

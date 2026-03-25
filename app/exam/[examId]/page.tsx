@@ -123,6 +123,7 @@ export default function ExamPage() {
   const [statusMessage, setStatusMessage] = useState('')
   const [securityNotice, setSecurityNotice] = useState('')
   const [codeValidationFeedback, setCodeValidationFeedback] = useState<CodeValidationFeedback | null>(null)
+  const monitoringSuspendedRef = useRef(true)
 
   const { containerRef, isFullscreen, requestFullscreen, exitFullscreen } = useFullscreenEnforcement(true)
   const { flushLogs, suspiciousActivities, recordActivity } = useActivityDetection(
@@ -132,6 +133,7 @@ export default function ExamPage() {
     {
       disableCopyPaste: securitySettings.disableCopyPaste,
       disableRightClick: securitySettings.disableRightClick,
+      suspendRef: monitoringSuspendedRef,
     }
   )
 
@@ -143,12 +145,14 @@ export default function ExamPage() {
 
   const handleProctoringIncident = useCallback((message: string, activityType: string) => {
     setSecurityNotice(message)
-    recordActivity({
-      type: activityType,
-      severity: 'high',
-      description: message,
-      timestamp: new Date().toISOString(),
-    })
+    if (!monitoringSuspendedRef.current) {
+      recordActivity({
+        type: activityType,
+        severity: 'high',
+        description: message,
+        timestamp: new Date().toISOString(),
+      })
+    }
   }, [recordActivity])
 
   const {
@@ -398,10 +402,15 @@ export default function ExamPage() {
   useEffect(() => {
     if (!attemptId || !isAttemptStateHydrated) return
 
+    monitoringSuspendedRef.current = !isSecurityReady
+
     if (isSecurityReady) {
       secureSessionActivatedRef.current = true
       fullscreenViolationLoggedRef.current = false
+      return
     }
+
+    secureSessionActivatedRef.current = false
   }, [attemptId, isAttemptStateHydrated, isSecurityReady])
 
   useEffect(() => {
@@ -431,17 +440,35 @@ export default function ExamPage() {
 
   const handleSecureSetup = useCallback(async () => {
     setSecurityNotice('')
+    monitoringSuspendedRef.current = true
+    secureSessionActivatedRef.current = false
+    fullscreenViolationLoggedRef.current = false
 
-    const setupResults = await Promise.all([
-      securitySettings.forceFullscreen ? requestFullscreen() : Promise.resolve(true),
-      securitySettings.enableScreenRecording ? startScreenRecording() : Promise.resolve(true),
-      securitySettings.enableWebcamMonitoring ? startWebcamMonitoring() : Promise.resolve(true),
-    ])
+    const setupResults: boolean[] = []
+
+    if (securitySettings.enableWebcamMonitoring) {
+      setupResults.push(await startWebcamMonitoring())
+    } else {
+      setupResults.push(true)
+    }
+
+    if (securitySettings.enableScreenRecording) {
+      setupResults.push(await startScreenRecording())
+    } else {
+      setupResults.push(true)
+    }
+
+    if (securitySettings.forceFullscreen) {
+      setupResults.push(await requestFullscreen())
+    } else {
+      setupResults.push(true)
+    }
 
     const success = setupResults.every(Boolean)
 
     if (success) {
       secureSessionActivatedRef.current = true
+      monitoringSuspendedRef.current = false
       setSecurityNotice('')
       return
     }
