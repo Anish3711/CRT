@@ -11,7 +11,6 @@ import { CodeEditor, type CodeValidationFeedback } from '@/components/exam/code-
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -607,27 +606,42 @@ export default function ExamPage() {
   }, [attemptId])
 
   const submitExam = useCallback(async (autoSubmitted: boolean) => {
-    if (!attemptId || isSubmittingExam) return
+    if (isSubmittingExam) return
+    if (!attemptId) {
+      setError('Exam session not found. Please restart from exam entry.')
+      return
+    }
 
+    let submissionSucceeded = false
     setIsSubmittingExam(true)
-    setShowSubmitDialog(false)
+    setStatusMessage('Submitting exam. Please wait...')
 
     try {
-      await Promise.all([persistAnswers(), flushLogs()])
+      await Promise.allSettled([persistAnswers(), flushLogs()])
 
-      const res = await fetch('/api/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attemptId, answers: studentAnswers, examId, codingLanguages: selectedLanguages }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit exam')
+      const submitAbortController = new AbortController()
+      const submitTimeout = setTimeout(() => submitAbortController.abort(), 60000)
+      let res: Response
+      try {
+        res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: submitAbortController.signal,
+          body: JSON.stringify({ attemptId, answers: studentAnswers, examId, codingLanguages: selectedLanguages }),
+        })
+      } finally {
+        clearTimeout(submitTimeout)
       }
 
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to submit exam')
+      }
+
+      submissionSucceeded = true
       secureSessionActivatedRef.current = false
       setSecurityNotice('')
+      setShowSubmitDialog(false)
 
       // Submission should not be blocked by recorder teardown.
       void Promise.allSettled([
@@ -638,18 +652,33 @@ export default function ExamPage() {
 
       clearAttemptStorage()
 
+      const scoreMessage =
+        typeof data?.score === 'number' &&
+        typeof data?.earnedPoints === 'number' &&
+        typeof data?.maxPoints === 'number'
+          ? ` Score: ${data.score}% (${data.earnedPoints}/${data.maxPoints} points).`
+          : ''
+
       if (autoSubmitted) {
-        setStatusMessage(`Exam auto-submitted. Score: ${data.score}% (${data.earnedPoints}/${data.maxPoints} points).`)
+        setStatusMessage(`Exam auto-submitted.${scoreMessage}`)
       } else {
-        setStatusMessage(`Exam submitted. Score: ${data.score}% (${data.earnedPoints}/${data.maxPoints} points).`)
+        setStatusMessage(`Exam submitted.${scoreMessage}`)
       }
 
       setTimeout(() => {
         router.push(`/results/${attemptId}`)
       }, 1800)
     } catch (err) {
-      setIsSubmittingExam(false)
-      setError(err instanceof Error ? err.message : 'Failed to submit exam')
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Submission timed out. Please click Submit again.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to submit exam')
+      }
+      setStatusMessage('')
+    } finally {
+      if (!submissionSucceeded) {
+        setIsSubmittingExam(false)
+      }
     }
   }, [
     attemptId,
@@ -913,7 +942,14 @@ export default function ExamPage() {
         </div>
       </div>
 
-      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+      <AlertDialog
+        open={showSubmitDialog}
+        onOpenChange={(open) => {
+          if (!isSubmittingExam) {
+            setShowSubmitDialog(open)
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Submit exam?</AlertDialogTitle>
@@ -922,10 +958,10 @@ export default function ExamPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => submitExam(false)} disabled={isSubmittingExam}>
+            <AlertDialogCancel disabled={isSubmittingExam}>Cancel</AlertDialogCancel>
+            <Button onClick={() => submitExam(false)} disabled={isSubmittingExam} className="bg-zinc-950 text-white hover:bg-zinc-800">
               {isSubmittingExam ? 'Submitting...' : 'Submit'}
-            </AlertDialogAction>
+            </Button>
           </div>
         </AlertDialogContent>
       </AlertDialog>
