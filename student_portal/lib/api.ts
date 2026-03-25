@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { CODING_POINTS, MCQ_POINTS } from '@/../lib/scoring'
+import { CODING_POINTS, MCQ_POINTS } from '@/lib/scoring'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -73,7 +73,19 @@ export type Exam = {
   status: "draft" | "published" | "active" | "completed"
   questionCount: number
   security: SecuritySettings
+  customFields: StudentCustomField[]
   createdAt: string
+}
+
+export type StudentCustomFieldType = "text" | "email" | "number" | "tel" | "select"
+
+export type StudentCustomField = {
+  id: string
+  label: string
+  type: StudentCustomFieldType
+  required: boolean
+  placeholder?: string
+  options?: string[]
 }
 
 export type SecuritySettings = {
@@ -184,12 +196,14 @@ const defaultExamMetadata: {
   maxAttempts: number
   status: Exam['status']
   security: SecuritySettings
+  intakeFields: StudentCustomField[]
 } = {
   startTime: '',
   endTime: '',
   maxAttempts: 1,
   status: 'draft' as const,
   security: defaultSecurity,
+  intakeFields: [],
 }
 
 type ExamMetadataLike = {
@@ -198,6 +212,24 @@ type ExamMetadataLike = {
   maxAttempts: number
   status: Exam["status"]
   security: Partial<SecuritySettings>
+  intakeFields?: StudentCustomField[]
+}
+
+function sanitizeCustomFields(fields?: StudentCustomField[] | null): StudentCustomField[] {
+  if (!Array.isArray(fields)) return []
+
+  return fields
+    .map((field) => ({
+      id: typeof field.id === 'string' && field.id.trim() ? field.id.trim() : `field_${Date.now().toString(36)}`,
+      label: typeof field.label === 'string' ? field.label.trim() : '',
+      type: ['text', 'email', 'number', 'tel', 'select'].includes(field.type) ? field.type : 'text',
+      required: Boolean(field.required),
+      placeholder: typeof field.placeholder === 'string' ? field.placeholder : '',
+      options: Array.isArray(field.options)
+        ? field.options.map((option) => String(option).trim()).filter(Boolean)
+        : [],
+    }))
+    .filter((field) => field.label.length > 0)
 }
 
 async function loadConfigStore() {
@@ -411,6 +443,8 @@ async function insertTestCases(codingQuestionId: string, testCases: TestCase[]) 
 }
 
 function mapExamFromDB(dbExam: ExamRow, metadata: ExamMetadataLike = defaultExamMetadata): Exam {
+  const customFields = sanitizeCustomFields(metadata.intakeFields)
+
   return {
     id: dbExam.id,
     title: dbExam.title,
@@ -426,6 +460,7 @@ function mapExamFromDB(dbExam: ExamRow, metadata: ExamMetadataLike = defaultExam
       ...defaultSecurity,
       ...metadata.security,
     },
+    customFields,
     createdAt: dbExam.created_at,
   }
 }
@@ -508,6 +543,7 @@ export const examApi = {
       maxAttempts: data.maxAttempts,
       status: data.status,
       security: data.security,
+      intakeFields: sanitizeCustomFields(data.customFields),
     })
 
     return mapExamFromDB(result, metadata)
@@ -529,13 +565,16 @@ export const examApi = {
     if (error) throw error
 
     const { saveExamMetadata } = await loadConfigStore()
-    const metadata = await saveExamMetadata(id, {
+    const metadataUpdates = {
       startTime: data.startTime,
       endTime: data.endTime,
       maxAttempts: data.maxAttempts,
       status: data.status,
       security: data.security,
-    })
+      ...(data.customFields ? { intakeFields: sanitizeCustomFields(data.customFields) } : {}),
+    }
+
+    const metadata = await saveExamMetadata(id, metadataUpdates)
 
     return mapExamFromDB(result, metadata)
   },

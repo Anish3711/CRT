@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
       endTime: body.endTime,
       maxAttempts: body.maxAttempts,
       status: body.status,
-      security: body.security
+      security: body.security,
+      customFields: body.customFields || [],
     })
     return NextResponse.json(newExam)
   } catch (error) {

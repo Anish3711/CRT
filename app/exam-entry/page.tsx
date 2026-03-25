@@ -9,6 +9,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { SpecCrtBrand } from '@/components/branding/spec-crt-brand'
 
+type StudentCustomField = {
+  id: string
+  label: string
+  type: 'text' | 'email' | 'number' | 'tel' | 'select'
+  required: boolean
+  placeholder: string
+  options: string[]
+}
+
 function ExamEntryForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -21,6 +30,8 @@ function ExamEntryForm() {
     section: '',
     mobile: '',
   })
+  const [customFields, setCustomFields] = useState<StudentCustomField[]>([])
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -30,6 +41,33 @@ function ExamEntryForm() {
     } else {
       setError('')
     }
+  }, [examId])
+
+  useEffect(() => {
+    if (!examId) return
+
+    const loadCustomFields = async () => {
+      try {
+        const response = await fetch(`/api/exam-entry-config?examId=${examId}`)
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Failed to load exam entry form')
+
+        const fields = Array.isArray(data.fields) ? data.fields : []
+        setCustomFields(fields)
+        setCustomFieldValues((prev) => {
+          const next: Record<string, string> = {}
+          for (const field of fields) {
+            next[field.id] = prev[field.id] || ''
+          }
+          return next
+        })
+      } catch (fetchError) {
+        console.error(fetchError)
+        setCustomFields([])
+      }
+    }
+
+    loadCustomFields()
   }, [examId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -48,6 +86,25 @@ function ExamEntryForm() {
     if (!form.year) return 'Year is required.'
     if (!form.section.trim()) return 'Section is required.'
     if (!/^[6-9]\d{9}$/.test(form.mobile)) return 'Enter a valid 10-digit Indian mobile number.'
+
+    for (const field of customFields) {
+      const value = (customFieldValues[field.id] || '').trim()
+
+      if (field.required && !value) {
+        return `${field.label} is required.`
+      }
+
+      if (!value) continue
+
+      if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return `Enter a valid email for ${field.label}.`
+      }
+
+      if (field.type === 'number' && Number.isNaN(Number(value))) {
+        return `${field.label} must be a number.`
+      }
+    }
+
     return ''
   }
 
@@ -71,7 +128,7 @@ function ExamEntryForm() {
       const res = await fetch('/api/start-exam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, examId }),
+        body: JSON.stringify({ ...form, examId, customFields: customFieldValues }),
       })
 
       const data = await res.json()
@@ -182,6 +239,46 @@ function ExamEntryForm() {
                     required
                   />
                 </div>
+
+                {customFields.map((field) => (
+                  <div key={field.id} className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-900">
+                      {field.label} {field.required ? '*' : ''}
+                    </label>
+                    {field.type === 'select' ? (
+                      <select
+                        value={customFieldValues[field.id] || ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setCustomFieldValues((prev) => ({ ...prev, [field.id]: value }))
+                        }}
+                        className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                        required={field.required}
+                      >
+                        <option value="" disabled>
+                          {field.placeholder || `Select ${field.label}`}
+                        </option>
+                        {field.options.map((option) => (
+                          <option key={`${field.id}-${option}`} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        type={field.type}
+                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                        value={customFieldValues[field.id] || ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setCustomFieldValues((prev) => ({ ...prev, [field.id]: value }))
+                        }}
+                        className="border-zinc-300 bg-white text-zinc-950 placeholder:text-zinc-400"
+                        required={field.required}
+                      />
+                    )}
+                  </div>
+                ))}
 
                 <Button
                   type="submit"

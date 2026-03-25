@@ -10,7 +10,19 @@ export type Exam = {
   status: "draft" | "published" | "active" | "completed"
   questionCount: number
   security: SecuritySettings
+  customFields: StudentCustomField[]
   createdAt: string
+}
+
+export type StudentCustomFieldType = "text" | "email" | "number" | "tel" | "select"
+
+export type StudentCustomField = {
+  id: string
+  label: string
+  type: StudentCustomFieldType
+  required: boolean
+  placeholder?: string
+  options?: string[]
 }
 
 export type SecuritySettings = {

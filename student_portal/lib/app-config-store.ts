@@ -39,10 +39,22 @@ export type ExamMetadata = {
   maxAttempts: number
   status: 'draft' | 'published' | 'active' | 'completed'
   security: Omit<SecuritySettings, 'maxTabSwitches' | 'warningMessage'>
+  intakeFields: StudentIntakeField[]
 }
 
 export type CodingQuestionMetadata = {
   allowedLanguages: string[]
+}
+
+export type StudentIntakeFieldType = 'text' | 'email' | 'number' | 'tel' | 'select'
+
+export type StudentIntakeField = {
+  id: string
+  label: string
+  type: StudentIntakeFieldType
+  required: boolean
+  placeholder?: string
+  options?: string[]
 }
 
 type AppConfig = {
@@ -82,6 +94,7 @@ export const defaultExamMetadata: ExamMetadata = {
     randomizeQuestions: defaultSecuritySettings.randomizeQuestions,
     randomizeTestCases: defaultSecuritySettings.randomizeTestCases,
   },
+  intakeFields: [],
 }
 
 export const defaultProfileSettings: ProfileSettings = {
@@ -200,6 +213,9 @@ export async function getExamMetadata(examId: string) {
       ...defaultExamMetadata.security,
       ...config.examMetadata[examId]?.security,
     },
+    intakeFields: Array.isArray(config.examMetadata[examId]?.intakeFields)
+      ? config.examMetadata[examId]?.intakeFields || []
+      : [],
   }
 }
 

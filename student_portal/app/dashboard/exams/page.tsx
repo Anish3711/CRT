@@ -41,7 +41,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useExams } from "@/hooks/use-data"
-import { type SecuritySettings, defaultSecurity } from "@/lib/api-client"
+import { type SecuritySettings, type StudentCustomField, defaultSecurity } from "@/lib/api-client"
+
+function createCustomField(): StudentCustomField {
+  return {
+    id: `field_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    label: "",
+    type: "text",
+    required: false,
+    placeholder: "",
+    options: [],
+  }
+}
 
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
@@ -64,6 +75,7 @@ export default function ExamsPage() {
   const [showSecurity, setShowSecurity] = useState(false)
   const [currentSecurity, setCurrentSecurity] =
     useState<SecuritySettings>(defaultSecurity)
+  const [formCustomFields, setFormCustomFields] = useState<StudentCustomField[]>([])
   const [saving, setSaving] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -84,6 +96,7 @@ export default function ExamsPage() {
     setFormEnd("")
     setFormAttempts("1")
     setCurrentSecurity({ ...defaultSecurity })
+    setFormCustomFields([])
     setShowSecurity(false)
   }
 
@@ -97,6 +110,7 @@ export default function ExamsPage() {
     endTime: string
     maxAttempts: number
     security: SecuritySettings
+    customFields: StudentCustomField[]
   }) => {
     setEditingExamId(exam.id)
     setFormTitle(exam.title)
@@ -107,6 +121,7 @@ export default function ExamsPage() {
     setFormEnd(exam.endTime)
     setFormAttempts(String(exam.maxAttempts))
     setCurrentSecurity({ ...exam.security })
+    setFormCustomFields(exam.customFields || [])
     setIsCreateOpen(true)
   }
 
@@ -121,6 +136,16 @@ export default function ExamsPage() {
       endTime: formEnd,
       maxAttempts: Number(formAttempts),
       security: currentSecurity,
+      customFields: formCustomFields
+        .map((field) => ({
+          ...field,
+          label: field.label.trim(),
+          placeholder: field.placeholder?.trim() || "",
+          options: field.type === "select"
+            ? (field.options || []).map((option) => option.trim()).filter(Boolean)
+            : [],
+        }))
+        .filter((field) => field.label.length > 0),
       status: "draft" as const,
     }
 
@@ -478,6 +503,148 @@ export default function ExamsPage() {
                 className="bg-secondary text-foreground"
               />
             </div>
+
+            <Card className="border-border bg-secondary">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base text-card-foreground">
+                  Student Form Fields (Per Exam)
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Add optional custom fields like Branch, Email, CGPA for this exam.
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {formCustomFields.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No custom fields added. Students will see only default details.
+                  </p>
+                )}
+
+                {formCustomFields.map((field) => (
+                  <div key={field.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="flex flex-col gap-2">
+                        <Label className="text-xs text-muted-foreground">Field Label</Label>
+                        <Input
+                          value={field.label}
+                          onChange={(e) => {
+                            const label = e.target.value
+                            setFormCustomFields((prev) =>
+                              prev.map((item) => (item.id === field.id ? { ...item, label } : item))
+                            )
+                          }}
+                          placeholder="e.g. Branch"
+                          className="bg-secondary text-foreground"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label className="text-xs text-muted-foreground">Field Type</Label>
+                        <Select
+                          value={field.type}
+                          onValueChange={(value: StudentCustomField["type"]) => {
+                            setFormCustomFields((prev) =>
+                              prev.map((item) =>
+                                item.id === field.id
+                                  ? {
+                                      ...item,
+                                      type: value,
+                                      options: value === "select" ? (item.options?.length ? item.options : [""]) : [],
+                                    }
+                                  : item
+                              )
+                            )
+                          }}
+                        >
+                          <SelectTrigger className="bg-secondary text-foreground">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-card text-card-foreground">
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="number">Number</SelectItem>
+                            <SelectItem value="tel">Phone</SelectItem>
+                            <SelectItem value="select">Dropdown</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <div className="flex flex-col gap-2">
+                        <Label className="text-xs text-muted-foreground">Placeholder (optional)</Label>
+                        <Input
+                          value={field.placeholder || ""}
+                          onChange={(e) => {
+                            const placeholder = e.target.value
+                            setFormCustomFields((prev) =>
+                              prev.map((item) => (item.id === field.id ? { ...item, placeholder } : item))
+                            )
+                          }}
+                          placeholder="Shown in student form"
+                          className="bg-secondary text-foreground"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border border-border bg-secondary px-3 py-2">
+                        <Label className="text-sm text-foreground">Required Field</Label>
+                        <Switch
+                          checked={field.required}
+                          onCheckedChange={(checked) => {
+                            setFormCustomFields((prev) =>
+                              prev.map((item) => (item.id === field.id ? { ...item, required: checked } : item))
+                            )
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {field.type === "select" && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        <Label className="text-xs text-muted-foreground">Dropdown Options (one per line)</Label>
+                        <Textarea
+                          value={(field.options || []).join("\n")}
+                          onChange={(e) => {
+                            const options = e.target.value
+                              .split("\n")
+                              .map((option) => option.trim())
+                            setFormCustomFields((prev) =>
+                              prev.map((item) => (item.id === field.id ? { ...item, options } : item))
+                            )
+                          }}
+                          placeholder={"CSE\nCSM\nECE"}
+                          className="min-h-[100px] bg-secondary text-foreground"
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setFormCustomFields((prev) => prev.filter((item) => item.id !== field.id))
+                        }}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Remove Field
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setFormCustomFields((prev) => [...prev, createCustomField()])
+                  }}
+                >
+                  <Plus className="mr-2 size-4" />
+                  Add Custom Field
+                </Button>
+              </CardContent>
+            </Card>
 
             <div className="flex items-center justify-between rounded-lg border border-border bg-secondary p-4">
               <div>

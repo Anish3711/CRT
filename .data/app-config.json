@@ -29,7 +29,42 @@
     "maxTabSwitches": 2,
     "warningMessage": "Warning: Suspicious activity detected. Further violations will terminate your exam."
   },
-  "examMetadata": {},
+  "examMetadata": {
+    "0578d85b-52a6-476f-9a2d-ab3bddcc7967": {
+      "startTime": "",
+      "endTime": "",
+      "maxAttempts": 1,
+      "status": "draft",
+      "security": {
+        "forceFullscreen": true,
+        "cancelOnTabSwitch": true,
+        "disableCopyPaste": true,
+        "disableRightClick": true,
+        "disableDevTools": true,
+        "enableScreenRecording": true,
+        "enableWebcamMonitoring": true,
+        "randomizeQuestions": true,
+        "randomizeTestCases": false,
+        "maxTabSwitches": 2,
+        "warningMessage": "Warning: Suspicious activity detected. Further violations will terminate your exam."
+      },
+      "intakeFields": [
+        {
+          "id": "field_mn6733yu_0xlkxf",
+          "label": "Branch",
+          "type": "select",
+          "required": false,
+          "placeholder": "",
+          "options": [
+            "CSM",
+            "CSE",
+            "ECE",
+            "EEE"
+          ]
+        }
+      ]
+    }
+  },
   "codingQuestionMetadata": {
     "eee13d85-241f-48db-8e9b-ff0c6a0faa24": {
       "allowedLanguages": [
