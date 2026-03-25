@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDashboardStats } from "@/hooks/use-data"
-import { SpecCrtBrand } from "@/components/spec-crt-brand"
 
 function StatCard({
   title,
@@ -88,11 +87,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="rounded-[28px] border border-border bg-card px-6 py-8 shadow-sm">
-        <SpecCrtBrand
-          compact
-          className="justify-center"
-        />
-        <div className="mt-4 text-center">
+        <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="mt-2 text-sm text-muted-foreground">
           Overview of your CRT testing platform
