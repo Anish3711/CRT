@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 export const metadata: Metadata = {
   title: 'SPEC CRT - Faculty Control Panel',
   description: 'Faculty control panel for SPEC CRT at St. Peter\'s Engineering College',

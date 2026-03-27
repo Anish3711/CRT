@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const fetcher = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null))
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null))
 
 type ProfileData = {
   name: string

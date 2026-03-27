@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { type SecuritySettings, defaultSecurity } from "@/lib/api-client"
 
-const fetcher = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null))
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null))
 
 type SecurityField = {
   key:

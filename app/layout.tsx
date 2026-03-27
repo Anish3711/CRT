@@ -3,6 +3,9 @@ import { Analytics } from '@vercel/analytics/next'
 import { ExamProvider } from './contexts/exam-context'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 export const metadata: Metadata = {
   title: 'SPEC CRT - Secure Exam Portal',
   description: 'Secure exam portal for SPEC CRT at St. Peter\'s Engineering College',

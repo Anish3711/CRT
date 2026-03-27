@@ -58,6 +58,7 @@ export default function DashboardPage() {
             className="mx-auto"
             subtitle="Secure Coding and Recruitment Test platform for monitored examinations. Select your exam and continue from the center of the portal."
           />
+          <p className="mt-3 text-center text-xs text-zinc-500">Version: v2.0-fixed</p>
 
           <div className="mx-auto mt-10 max-w-3xl text-center">
             <h2 className="text-2xl font-semibold text-zinc-950 sm:text-3xl">Available Exams</h2>

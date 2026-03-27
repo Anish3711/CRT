@@ -48,7 +48,7 @@ function ExamEntryForm() {
 
     const loadCustomFields = async () => {
       try {
-        const response = await fetch(`/api/exam-entry-config?examId=${examId}`)
+        const response = await fetch(`/api/exam-entry-config?examId=${examId}`, { cache: 'no-store' })
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Failed to load exam entry form')
 

@@ -216,7 +216,7 @@ export default function ExamPage() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const res = await fetch(`/api/settings/security?examId=${examId}`)
+        const res = await fetch(`/api/settings/security?examId=${examId}`, { cache: 'no-store' })
         if (!res.ok) return
         const data = await res.json()
         if (data) {
@@ -236,7 +236,7 @@ export default function ExamPage() {
     const initializeExam = async () => {
       try {
         setIsAttemptStateHydrated(false)
-        const res = await fetch(`/api/exam-questions?examId=${examId}&attemptId=${attemptId}`)
+        const res = await fetch(`/api/exam-questions?examId=${examId}&attemptId=${attemptId}`, { cache: 'no-store' })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to load exam')
 

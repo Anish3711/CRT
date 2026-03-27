@@ -89,6 +89,7 @@ export default function DashboardPage() {
       <div className="rounded-[28px] border border-border bg-card px-6 py-8 shadow-sm">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Version: v2.0-fixed</p>
           <p className="mt-2 text-sm text-muted-foreground">
           Overview of your CRT testing platform
           {error && " (connecting to student server...)"}
